@@ -1,0 +1,4 @@
+name: emmer
+recipe: symfony
+config:
+  webroot: public
