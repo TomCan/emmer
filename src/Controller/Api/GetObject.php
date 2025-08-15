@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Controller\Api;
+
+use App\Entity\File;
+use App\Service\BucketService;
+use App\Service\RequestService;
+use App\Service\ResponseService;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+class GetObject extends AbstractController
+{
+    #[Route('/{bucket}/{key}', name: 'get_object', methods: ['HEAD', 'GET'], requirements: ['key' => '.+'])]
+    public function getObject(RequestService $requestService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
+    {
+        $bucket = $bucketService->getBucket($bucket);
+        if (!$bucket) {
+            return $responseService->createForbiddenResponse();
+        }
+
+        // check if key exists in bucket
+        $file = $bucketService->getFile($bucket, $key);
+        if (!$file) {
+            // API states it returns 404 but in reality it returns 403 forbidden
+            return $responseService->createForbiddenResponse();
+        }
+
+        // Do we need to serve the file?
+        $action = $requestService->evaluateConditionalHeaders($request, $file->getEtag(), $file->getMtime());
+        if (412 === $action) {
+            return $responseService->createPreconditionFailedResponse();
+        }
+        if (304 === $action) {
+            return $responseService->createNotModifiedResponse();
+        }
+
+        $rangeStart = 0;
+        $rangeEnd = $file->getSize() - 1;
+        if ($request->headers->has('range')) {
+            try {
+                list($rangeStart, $rangeEnd) = $requestService->getRange($request->headers->get('range'), $file->getSize() - 1);
+            } catch (\InvalidArgumentException $e) {
+                return $responseService->createErrorResponse(
+                    400,
+                    str_replace(' ', '', $e->getMessage()),
+                    $e->getMessage()
+                );
+            }
+        }
+
+        if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR)) {
+            $bucketPath = $bucket->getPath();
+        } else {
+            $bucketPath = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath();
+        }
+        // for now only 1 part, but who knows what the future holds
+        $parts = [
+            $bucketPath.DIRECTORY_SEPARATOR.$file->getPath(),
+        ];
+
+        $headers = [
+            'Content-Type' => 'application/octet-stream',
+            'Content-Length' => $file->getSize(),
+            'Last-Modified' => $file->getMtime()->format('D, d M Y H:i:s') . ' GMT',
+            'ETag' => '"'.$file->getEtag().'"',
+            'Accept-Ranges' => 'bytes',
+        ];
+
+        if ($rangeStart !== 0 || $rangeEnd !== $file->getSize() - 1) {
+            $headers['Content-Range'] = 'bytes '.$rangeStart.'-'.$rangeEnd.'/'.$file->getSize();
+            $headers['Content-Length'] = $rangeEnd - $rangeStart + 1;
+        } else {
+            // not doing ranged request
+            $rangeStart = -1;
+            $rangeEnd = -1;
+        }
+
+        if ('HEAD' == $request->getMethod()) {
+            return $responseService->createResponse([], 200, '', $headers);
+        } else {
+//            var_dump($headers);die();
+            return $responseService->createFileStreamResponse($parts, $rangeStart, $rangeEnd, $headers);
+        }
+
+    }
+}
