@@ -15,6 +15,7 @@ class BucketService
         private BucketRepository $bucketRepository,
         private FileRepository $fileRepository,
         private EntityManagerInterface $entityManager,
+        private GeneratorService $generatorService,
     ) {}
 
     public function getBucket(string $name): ?Bucket
@@ -25,7 +26,7 @@ class BucketService
     public function getUnusedPath(Bucket $bucket): string
     {
         $i = 0;
-        $path = uniqid().uniqid();
+        $path = $this->generatorService->generateId(32);
         $path = substr($path, 0, 2).DIRECTORY_SEPARATOR.$path;
         while ($this->fileRepository->findOneBy(['bucket' => $bucket, 'path' => $path])) {
             $path = uniqid().uniqid();
