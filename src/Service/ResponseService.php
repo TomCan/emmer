@@ -40,6 +40,15 @@ class ResponseService
         );
     }
 
+    public function createNotModifiedResponse(): Response
+    {
+        return $this->createResponse(
+            [],
+            304,
+            'text/plain',
+        );
+    }
+
     public function createResponse(array $data, int $status = 200, string $contentType = 'application/xml', array $headers = []): Response
     {
         // generate unique id
