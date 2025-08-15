@@ -81,6 +81,11 @@ class BucketService
         return $objectList;
     }
 
+    public function getFile(Bucket $bucket, string $name): ?File
+    {
+        return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name]);
+    }
+
     public function saveFile(File $file, bool $flush = true): void
     {
         $this->entityManager->persist($file);
