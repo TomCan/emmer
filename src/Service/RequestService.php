@@ -64,7 +64,7 @@ class RequestService
         return 200;
     }
 
-    private function etagHeaderMatches($headerValue, $etagValue) {
+    public function etagHeaderMatches($headerValue, $etagValue) {
         $values = explode(',', $headerValue);
         foreach ($values as $value) {
             $value = trim($value);
