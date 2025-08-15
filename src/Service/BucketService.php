@@ -26,7 +26,7 @@ class BucketService
     public function getUnusedPath(Bucket $bucket): string
     {
         $i = 0;
-        $path = $this->generatorService->generateId(32);
+        $path = $this->generatorService->generateId(32, GeneratorService::CLASS_LOWER | GeneratorService::CLASS_NUMBER);
         $path = substr($path, 0, 2).DIRECTORY_SEPARATOR.$path;
         while ($this->fileRepository->findOneBy(['bucket' => $bucket, 'path' => $path])) {
             $path = uniqid().uniqid();
