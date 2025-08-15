@@ -4,6 +4,7 @@ namespace App\Service;
 
 use SimpleXMLElement;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ResponseService
 {
@@ -75,6 +76,66 @@ class ResponseService
                 [
                     'Content-Type' => $contentType
                 ],
+                $headers,
+            )
+        );
+    }
+
+    public function createFileStreamResponse(array $fileParts, int $rangeStart, int $rangeEnd, array $headers = []): Response
+    {
+        $this->defaultHeaders['x-emmer-id'] = 'emr-'.$this->generatorService->generateId(32);
+
+        return new StreamedResponse(
+            function () use ($fileParts, $rangeStart, $rangeEnd) {
+                $outputStream = fopen('php://output', 'wb');
+                $chunk = 0;
+                $chunkSize = 8192;
+                $remaining = -1 == $rangeStart ? -1 : $rangeEnd - $rangeStart + 1;
+
+                foreach ($fileParts as $filePart) {
+                    if ($remaining == 0) {
+                        // range processed, done
+                        break;
+                    } elseif ($rangeStart > 0 && $rangeStart >= filesize($filePart)) {
+                        // no need to process this part as start is in later part
+                        $rangeStart -= filesize($filePart);
+                    } elseif ($fp = fopen($filePart, 'rb')) {
+                        if ($rangeStart > 0) {
+                            fseek($fp, $rangeStart);
+                            $rangeStart = 0;
+                        }
+                        while (!feof($fp)) {
+                            if (0 == $remaining) {
+                                break;
+                            } elseif (-1 !== $remaining && $remaining < $chunkSize) {
+                                $read = stream_copy_to_stream($fp, $outputStream, $remaining);
+                            } else {
+                                $read = stream_copy_to_stream($fp, $outputStream, $chunkSize);
+                            }
+                            if (false === $read) {
+                                throw new \RuntimeException('Stream copy error for file: ' . $filePart);
+                            } else {
+                                if ($remaining > 0) {
+                                    $remaining -= $read;
+                                }
+                            }
+
+                            $chunk++;
+                            if ($chunk % 1000 == 0) {
+                                flush();
+                            }
+                        }
+                        fclose($fp);
+                    } else {
+                        throw new \RuntimeException('Unable to open file: ' . $filePart);
+                    }
+                }
+
+                fclose($outputStream);
+            },
+            $rangeStart !== -1 ? 206 : 200,
+            array_merge(
+                $this->defaultHeaders,
                 $headers,
             )
         );
