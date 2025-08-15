@@ -93,4 +93,12 @@ class BucketService
             $this->entityManager->flush();
         }
     }
+
+    public function deleteFile(File $file, bool $flush = true): void
+    {
+        $this->entityManager->remove($file);
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
 }

@@ -18,8 +18,9 @@ This project is in early development and by no means ready for production use.
 | List objects         | ✅ |
 | Get/Head object      | ✅ |
 | Put object (v1 + v2) | ✅ |
-| Delete object        | ❌ |
 | Multi-part uploads   | ❌ |
+| Delete object        | ✅ |
+| Delete objects       | ❌ |
 | Versioning           | ❌ |
 | Regions              | ❌ |
 | Signed URLs          | ❌ |
