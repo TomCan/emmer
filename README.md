@@ -16,7 +16,7 @@ This project is in early development and by no means ready for production use.
 | Create bucket        | ❌ |
 | Delete bucket        | ❌ |
 | List objects         | ✅ |
-| Get object           | ✅ |
+| Get/Head object      | ✅ |
 | Put object (v1 + v2) | ✅ |
 | Delete object        | ❌ |
 | Multi-part uploads   | ❌ |
