@@ -7,19 +7,44 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ResponseService
 {
-    public function createResponse(array $data, int $status = 200, string $contentType = 'application/xml'): Response
+    public function __construct(
+        private GeneratorService $generatorService,
+    )
     {
+    }
+
+    private array $defaultHeaders = [
+        'x-generator' => 'Emmer',
+    ];
+
+    public function createResponse(array $data, int $status = 200, string $contentType = 'application/xml', array $headers = []): Response
+    {
+        // generate unique id
+        $this->defaultHeaders['x-emmer-id'] = 'emr-'.$this->generatorService->generateId(32);
+
         if (empty($data)) {
             return new Response(
                 '',
                 $status,
-                ['Content-Type' => $contentType],
+                array_merge(
+                    $this->defaultHeaders,
+                    [
+                        'Content-Type' => $contentType
+                    ],
+                    $headers,
+                )
             );
         }
         return new Response(
             $this->arrayToXmlString($data[array_key_first($data)], array_key_first($data)),
             $status,
-            ['Content-Type' => $contentType]
+            array_merge(
+                $this->defaultHeaders,
+                [
+                    'Content-Type' => $contentType
+                ],
+                $headers,
+            )
         );
     }
 
