@@ -28,15 +28,41 @@ class PutObject extends AbstractController
             );
         }
 
-        // if-match
-        // if-none-match
-        // content-md5
-        // content-type
+        // check if key already exists in bucket
+        $file = $bucketService->getFile($bucket, $key);
+        if ($file) {
+            // existing file
+            if ($request->headers->get('if-none-match', '') === '*') {
+                // if-none-match is set, abort
+                return new Response('Precondition Failed', 412, ['X-Message' => 'Key already exists in bucket']);
+            }
+        } else {
+            $file = new File();
+            $file->setBucket($bucket);
+            $file->setName($key);
+            $file->setPath($bucketService->getUnusedPath($bucket));
+        }
 
-        $file = new File();
-        $file->setBucket($bucket);
-        $file->setName($key);
-        $file->setPath($bucketService->getUnusedPath($bucket));
+        // check if-match header
+        if ($request->headers->get('if-match', '') !== '') {
+            $etags = explode(',', $request->headers->get('if-match', ''));
+            $matches = false;
+            foreach ($etags as $etag) {
+                $etag = trim($etag);
+                if (str_starts_with($etag, '"') && str_ends_with($etag, '"')) {
+                    // stip quotes
+                    $etag = substr($etag, 1, -1);
+                }
+                if ('*' == $etag || $etag === $file->getEtag()) {
+                    $matches = true;
+                    break;
+                }
+            }
+
+            if (!$matches) {
+                return new Response('Precondition Failed', 412, ['X-Message' => 'Etag does not match']);
+            }
+        }
 
         $path = 'storage'.DIRECTORY_SEPARATOR.$bucket->getName().DIRECTORY_SEPARATOR.$file->getPath();
         $basePath = dirname($path);
