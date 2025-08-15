@@ -64,7 +64,13 @@ class PutObject extends AbstractController
             }
         }
 
-        $path = 'storage'.DIRECTORY_SEPARATOR.$bucket->getName().DIRECTORY_SEPARATOR.$file->getPath();
+        if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_ends_with($bucket->getPath(), '\\')) {
+            // full path
+            $path = $bucket->getPath().DIRECTORY_SEPARATOR.$file->getPath();
+        } else {
+            // relative path from standard storage location
+            $path = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath().DIRECTORY_SEPARATOR.$file->getPath();
+        }
         $basePath = dirname($path);
         if (!is_dir($basePath)) {
             mkdir($basePath, 0755, true);

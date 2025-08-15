@@ -20,6 +20,9 @@ class Bucket
     #[ORM\Column(length: 255)]
     private ?string $description = null;
 
+    #[ORM\Column(length: 1024)]
+    private ?string $path = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -56,4 +59,13 @@ class Bucket
         return $this;
     }
 
+    public function getPath(): ?string
+    {
+        return $this->path;
+    }
+
+    public function setPath(?string $path): void
+    {
+        $this->path = $path;
+    }
 }
