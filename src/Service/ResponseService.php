@@ -17,6 +17,19 @@ class ResponseService
         'x-generator' => 'Emmer',
     ];
 
+    public function createForbiddenResponse(): Response
+    {
+        return $this->createResponse(
+            [
+                'Error' => [
+                    'Code' => 'AccessDenied',
+                    'Message' => 'Access Denied',
+                ],
+            ],
+            403
+        );
+    }
+
     public function createResponse(array $data, int $status = 200, string $contentType = 'application/xml', array $headers = []): Response
     {
         // generate unique id
