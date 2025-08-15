@@ -17,15 +17,7 @@ class PutObject extends AbstractController
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
-            return $responseService->createResponse(
-                [
-                    'Error' => [
-                        'Code' => 'AccessDenied',
-                        'Message' => 'Access Denied',
-                    ],
-                ],
-                403
-            );
+            return $responseService->createForbiddenResponse();
         }
 
         // check if key already exists in bucket
