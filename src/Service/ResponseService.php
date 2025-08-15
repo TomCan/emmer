@@ -19,14 +19,24 @@ class ResponseService
 
     public function createForbiddenResponse(): Response
     {
+        return $this->createErrorResponse(403, 'AccessDenied', 'Access Denied');
+    }
+
+    public function createPreconditionFailedResponse(): Response
+    {
+        return $this->createErrorResponse(412, 'PreconditionFailed', 'Precondition Failed');
+    }
+
+    public function createErrorResponse(int $status, string $code, string $message): Response
+    {
         return $this->createResponse(
             [
                 'Error' => [
-                    'Code' => 'AccessDenied',
-                    'Message' => 'Access Denied',
+                    'Code' => $code,
+                    'Message' => $message,
                 ],
             ],
-            403
+            $status
         );
     }
 
