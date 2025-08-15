@@ -8,21 +8,21 @@ environment to simulate S3 locally.
 
 This project is in early development and by no means ready for production use.
 
-| Feature                   | Status |
-|---------------------------|--------|
-| Authentication            | ❌ |
-| Authorization             | ❌ |
-| List buckets              | ❌ |
-| Create bucket             | ❌ |
-| Delete bucket             | ❌ |
-| List objects              | ✅ |
-| Get object                | ❌ |
-| Put object                | ✅ |
-| Delete object             | ❌ |
-| Multi-part uploads | ✅ |
-| Versioning                | ❌ |
-| Regions                   | ❌ |
-| Signed URLs               | ✅ |
+| Feature              | Status |
+|----------------------|--------|
+| Authentication       | ❌ |
+| Authorization        | ❌ |
+| List buckets         | ❌ |
+| Create bucket        | ❌ |
+| Delete bucket        | ❌ |
+| List objects         | ✅ |
+| Get object           | ✅ |
+| Put object (v1 + v2) | ✅ |
+| Delete object        | ❌ |
+| Multi-part uploads   | ❌ |
+| Versioning           | ❌ |
+| Regions              | ❌ |
+| Signed URLs          | ❌ |
 
 A checkbox means it has some support, not that it's fully implemented and 100% compatible with every feature of the S3 API.
 
