@@ -6,6 +6,7 @@ use App\Domain\List\ObjectList;
 use App\Entity\Bucket;
 use App\Entity\File;
 use App\Repository\BucketRepository;
+use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -14,6 +15,7 @@ class BucketService
     public function __construct(
         private BucketRepository $bucketRepository,
         private FileRepository $fileRepository,
+        private FilepartRepository $filepartRepository,
         private EntityManagerInterface $entityManager,
         private GeneratorService $generatorService,
     ) {}
@@ -25,11 +27,10 @@ class BucketService
 
     public function getUnusedPath(Bucket $bucket): string
     {
-        $i = 0;
         $path = $this->generatorService->generateId(32, GeneratorService::CLASS_LOWER | GeneratorService::CLASS_NUMBER);
         $path = substr($path, 0, 2).DIRECTORY_SEPARATOR.$path;
-        while ($this->fileRepository->findOneBy(['bucket' => $bucket, 'path' => $path])) {
-            $path = uniqid().uniqid();
+        while ($this->filepartRepository->findOneByBucketAndPath($bucket, $path)) {
+            $path = $this->generatorService->generateId(32, GeneratorService::CLASS_LOWER | GeneratorService::CLASS_NUMBER);
             $path = substr($path, 0, 2).DIRECTORY_SEPARATOR.$path;
         }
 

@@ -3,7 +3,9 @@
 namespace App\Controller\Api;
 
 use App\Entity\File;
+use App\Entity\Filepart;
 use App\Service\BucketService;
+use App\Service\GeneratorService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class PutObject extends AbstractController
 {
     #[Route('/{bucket}/{key}', name: 'put_object', methods: ['PUT'], requirements: ['key' => '.+'])]
-    public function putObject(ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
+    public function putObject(GeneratorService $generatorService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -28,11 +30,28 @@ class PutObject extends AbstractController
                 // if-none-match is set, abort
                 return new Response('Precondition Failed', 412, ['X-Message' => 'Key already exists in bucket']);
             }
+
+            // get first filepart, which isn't guaranteed to be the first in the collection
+            $filePart = null;
+            foreach ($file->getFileparts() as $part) {
+                if ($part->getPartNumber() === 1) {
+                    $filePart = $file->getFileparts()[0];
+                    break;
+                }
+            }
+            // force single part
+            $file->getFileparts()->clear();
+            $file->addFilepart($filePart);
         } else {
             $file = new File();
             $file->setBucket($bucket);
             $file->setName($key);
-            $file->setPath($bucketService->getUnusedPath($bucket));
+
+            $filePart = new Filepart();
+            $filePart->setPartNumber(1);
+            $filePart->setName($generatorService->generateId(32));
+            $filePart->setPath($bucketService->getUnusedPath($bucket));
+            $file->addFilepart($filePart);
         }
 
         // check if-match header
@@ -58,10 +77,10 @@ class PutObject extends AbstractController
 
         if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_ends_with($bucket->getPath(), '\\')) {
             // full path
-            $path = $bucket->getPath().DIRECTORY_SEPARATOR.$file->getPath();
+            $path = $bucket->getPath().DIRECTORY_SEPARATOR.$filePart->getPath();
         } else {
             // relative path from standard storage location
-            $path = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath().DIRECTORY_SEPARATOR.$file->getPath();
+            $path = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath().DIRECTORY_SEPARATOR.$filePart->getPath();
         }
         $basePath = dirname($path);
         if (!is_dir($basePath)) {
@@ -77,6 +96,10 @@ class PutObject extends AbstractController
         $file->setMtime(new \DateTime());
         $file->setSize(filesize($path));
         $file->setEtag(md5_file($path));
+
+        $filePart->setMtime($file->getMtime());
+        $filePart->setSize($file->getSize());
+        $filePart->setEtag($file->getEtag());
 
         $bucketService->saveFile($file);
 

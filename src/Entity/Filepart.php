@@ -2,15 +2,15 @@
 
 namespace App\Entity;
 
+use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: FileRepository::class)]
+#[ORM\Entity(repositoryClass: FilepartRepository::class)]
 #[ORM\UniqueConstraint(name: "name_idx", columns: ['name'])]
-class File
+#[ORM\UniqueConstraint(name: "filepart_idx", columns: ['file_id', 'partnumber'])]
+class Filepart
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -19,6 +19,9 @@ class File
 
     #[ORM\Column(length: 1024)]
     private ?string $name = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $path = null;
 
     #[ORM\Column]
     private ?int $size = null;
@@ -31,15 +34,10 @@ class File
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Bucket $bucket = null;
+    private ?File $file = null;
 
-    #[ORM\OneToMany(targetEntity: Filepart::class, mappedBy: 'file', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    private Collection $fileparts;
-
-    public function __construct()
-    {
-        $this->fileparts = new ArrayCollection();
-    }
+    #[ORM\Column(name: 'partnumber')]
+    private ?int $partNumber = null;
 
     public function getId(): ?int
     {
@@ -54,6 +52,18 @@ class File
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getPath(): ?string
+    {
+        return $this->path;
+    }
+
+    public function setPath(string $path): static
+    {
+        $this->path = $path;
 
         return $this;
     }
@@ -92,42 +102,25 @@ class File
         $this->etag = $etag;
     }
 
-    public function getBucket(): ?Bucket
+    public function getFile(): ?File
     {
-        return $this->bucket;
+        return $this->file;
     }
 
-    public function setBucket(?Bucket $bucket): static
+    public function setFile(?File $file): static
     {
-        $this->bucket = $bucket;
+        $this->file = $file;
 
         return $this;
     }
 
-    public function getFileparts(): Collection
+    public function getPartNumber(): ?int
     {
-        return $this->fileparts;
+        return $this->partNumber;
     }
 
-    public function addFilepart(Filepart $filepart): static
+    public function setPartNumber(?int $partNumber): void
     {
-        if (!$this->fileparts->contains($filepart)) {
-            $this->fileparts->add($filepart);
-            $filepart->setFile($this);
-        }
-
-        return $this;
-    }
-
-    public function removeFilepart(Filepart $filepart): static
-    {
-        if ($this->fileparts->removeElement($filepart)) {
-            // set the owning side to null (unless already changed)
-            if ($filepart->getFile() === $this) {
-                $filepart->setFile(null);
-            }
-        }
-
-        return $this;
+        $this->partNumber = $partNumber;
     }
 }
