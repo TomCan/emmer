@@ -20,7 +20,7 @@ This project is in early development and by no means ready for production use.
 | Put object (v1 + v2) | ✅ |
 | Multi-part uploads   | ❌ |
 | Delete object        | ✅ |
-| Delete objects       | ❌ |
+| Delete objects       | ✅ |
 | Versioning           | ❌ |
 | Regions              | ❌ |
 | Signed URLs          | ❌ |
