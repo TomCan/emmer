@@ -93,25 +93,32 @@ class DeleteObjects extends AbstractController
             }
 
             // ready to delete
-            $path = $bucketPath.DIRECTORY_SEPARATOR.$file->getPath();
+            $parts = [];
+            foreach ($file->getFileparts() as $filepart) {
+                $parts[$filepart->getPartNumber()] = $bucketPath.DIRECTORY_SEPARATOR.$filepart->getPath();
+            }
 
             // delete file from database
             $bucketService->deleteFile($file);
 
-            // delete file from filesystem
-            if (file_exists($path)) {
-                if (!unlink($path)) {
-                    $errors[] = [
-                        'Key' => (string)$object->Key,
-                        'Code' => 'FilesystemError',
-                        'Message' => 'Filesystem Error',
-                        // VersionId
-                    ];
-                    continue;
+            // delete parts from filesystem
+            $failed = false;
+            foreach ($parts as $path) {
+                if (file_exists($path)) {
+                    if (!unlink($path)) {
+                        $failed = true;
+                    }
                 }
             }
 
-            if (!$quiet) {
+            if ($failed) {
+                $errors[] = [
+                    'Key' => (string)$object->Key,
+                    'Code' => 'FilesystemError',
+                    'Message' => 'Filesystem Error',
+                    // VersionId
+                ];
+            } elseif (!$quiet) {
                 $deleted[] = [
                     'Key' => (string)$object->Key,
                     'DeleteMarker' => 'false', // unsupported

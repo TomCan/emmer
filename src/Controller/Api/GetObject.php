@@ -56,10 +56,12 @@ class GetObject extends AbstractController
         } else {
             $bucketPath = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath();
         }
-        // for now only 1 part, but who knows what the future holds
-        $parts = [
-            $bucketPath.DIRECTORY_SEPARATOR.$file->getPath(),
-        ];
+
+        $parts = [];
+        foreach ($file->getFileparts() as $filepart) {
+            $parts[$filepart->getPartNumber()] = $bucketPath.DIRECTORY_SEPARATOR.$filepart->getPath();
+        }
+        ksort($parts);
 
         $headers = [
             'Content-Type' => 'application/octet-stream',

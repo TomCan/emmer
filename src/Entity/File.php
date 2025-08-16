@@ -104,6 +104,9 @@ class File
         return $this;
     }
 
+    /**
+     * @return Collection<int, Filepart>
+     */
     public function getFileparts(): Collection
     {
         return $this->fileparts;
