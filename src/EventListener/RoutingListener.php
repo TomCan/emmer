@@ -2,8 +2,12 @@
 
 namespace App\EventListener;
 
+use App\Controller\Api\AbortMultipartUpload;
+use App\Controller\Api\CompleteMultipartUpload;
+use App\Controller\Api\CreateMultipartUpload;
 use App\Controller\Api\DeleteObjects;
 use App\Controller\Api\PutObject;
+use App\Controller\Api\UploadPart;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -13,9 +17,11 @@ class RoutingListener implements EventSubscriberInterface
 {
     public function onKernelRequest(RequestEvent $event): void
     {
+        /**
+         * Some routes need to be matched to a different controller/action if specific query parameters are present.
+         * This can't be done / is very hard to do with the default router.
+         */
         $request = $event->getRequest();
-
-        // Only handle our specific route pattern and methods
         $requestString = $request->getMethod().' '.$request->getPathInfo();
         $matches = [];
 
@@ -26,12 +32,51 @@ class RoutingListener implements EventSubscriberInterface
                 $request->attributes->set('bucket', $matches[1]);
             }
         }
+
+        // match POST /{bucket}/{key}
+        if (preg_match('#^POST /([^/]+)/(.+)$#', $requestString, $matches)) {
+            if ($request->query->has('uploads')) {
+                // Multipart upload: switch to CreateMultipartUpload controller
+                $request->attributes->set('_controller', CreateMultipartUpload::class.'::createMultipartUpload');;
+                $request->attributes->set('bucket', $matches[1]);
+                $request->attributes->set('key', $matches[2]);
+            } elseif ($request->query->has('uploadId')) {
+                // Multipart upload: switch to CompleteMultipartUpload controller
+                $request->attributes->set('_controller', CompleteMultipartUpload::class.'::completeMultipartUpload');;
+                $request->attributes->set('bucket', $matches[1]);
+                $request->attributes->set('key', $matches[2]);
+                $request->attributes->set('uploadId', $request->query->get('uploadId'));
+            }
+        }
+
+        // match PUT /{bucket}/{key}
+        if (preg_match('#^PUT /([^/]+)/(.+)$#', $requestString, $matches)) {
+            if ($request->query->has('uploadId') && $request->query->has('partNumber')) {
+                // Multipart upload: switch to UploadPart controller
+                $request->attributes->set('_controller', UploadPart::class.'::uploadPart');
+                $request->attributes->set('bucket', $matches[1]);
+                $request->attributes->set('key', $matches[2]);
+                $request->attributes->set('uploadId', $request->query->get('uploadId'));
+                $request->attributes->set('partNumber', $request->query->getInt('partNumber'));
+            }
+        }
+
+        // match DELETE /{bucket}/{key}
+        if (preg_match('#^DELETE /([^/]+)/(.+)$#', $requestString, $matches)) {
+            if ($request->query->has('uploadId')) {
+                // Multipart upload: switch to AbortMultipartUpload controller
+                $request->attributes->set('_controller', AbortMultipartUpload::class.'::abortMultipartUpload');;
+                $request->attributes->set('bucket', $matches[1]);
+                $request->attributes->set('key', $matches[2]);
+                $request->attributes->set('uploadId', $request->query->get('uploadId'));
+            }
+        }
     }
 
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST => ['onKernelRequest', 64], // Priority 10
+            KernelEvents::REQUEST => ['onKernelRequest', 64], // Priority 64, higher than 32 of the default router
         ];
     }
 }

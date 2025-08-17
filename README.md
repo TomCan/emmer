@@ -18,12 +18,16 @@ This project is in early development and by no means ready for production use.
 | List objects         | ✅ |
 | Get/Head object      | ✅ |
 | Put object (v1 + v2) | ✅ |
-| Multi-part uploads   | ❌ |
+| Multi-part uploads   | ✅❌ |
 | Delete object        | ✅ |
 | Delete objects       | ✅ |
 | Versioning           | ❌ |
 | Regions              | ❌ |
 | Signed URLs          | ❌ |
+| Slim controllers     | ❌ |
+| Coding standards     | ❌ |
+| Unit tests           | ❌ |
+| Static analyser      | ❌ |
 
 A checkbox means it has some support, not that it's fully implemented and 100% compatible with every feature of the S3 API.
 

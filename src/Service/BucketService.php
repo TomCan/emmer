@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Domain\List\ObjectList;
 use App\Entity\Bucket;
 use App\Entity\File;
+use App\Entity\Filepart;
 use App\Repository\BucketRepository;
 use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
@@ -18,6 +19,7 @@ class BucketService
         private FilepartRepository $filepartRepository,
         private EntityManagerInterface $entityManager,
         private GeneratorService $generatorService,
+        private string $bucketStoragePath,
     ) {}
 
     public function getBucket(string $name): ?Bucket
@@ -35,6 +37,22 @@ class BucketService
         }
 
         return $path;
+    }
+
+    public function getAbsoluteBucketPath(Bucket $bucket): string
+    {
+        if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_ends_with($bucket->getPath(), '\\')) {
+            // full path
+            return $bucket->getPath();
+        } else {
+            // relative path from standard storage location
+            return $this->bucketStoragePath.DIRECTORY_SEPARATOR.$bucket->getPath();
+        }
+    }
+
+    public function getAbsolutePartPath(Filepart $filepart): string
+    {
+        return $this->getAbsoluteBucketPath($filepart->getFile()->getBucket()).DIRECTORY_SEPARATOR.$filepart->getPath();
     }
 
     public function listFiles(Bucket $bucket, string $prefix, string $delimiter = '', string $marker = '', int $markerType = 1, int $maxKeys = 100): ObjectList
