@@ -64,7 +64,8 @@ class RequestService
         return 200;
     }
 
-    public function etagHeaderMatches($headerValue, $etagValue) {
+    public function etagHeaderMatches($headerValue, $etagValue)
+    {
         $values = explode(',', $headerValue);
         foreach ($values as $value) {
             $value = trim($value);
@@ -96,24 +97,24 @@ class RequestService
 
         // must be either int or empty
         if (
-            $range[0] !== '' && !preg_match('/^[0-9]+$/', $range[0])
-            || $range[1] !== '' && !preg_match('/^[0-9]+$/', $range[0])
+            '' !== $range[0] && !preg_match('/^[0-9]+$/', $range[0])
+            || '' !== $range[1] && !preg_match('/^[0-9]+$/', $range[0])
         ) {
             throw new \InvalidArgumentException('Invalid Range');
         }
 
-        if ($range[0] == '' && $range[1] == '') {
+        if ('' == $range[0] && '' == $range[1]) {
             // can't both be empty
             throw new \InvalidArgumentException('Invalid Range');
         }
 
-        if ($range[0] == '') {
+        if ('' == $range[0]) {
             // bytes from back, eg Range: bytes=-1000
             $rangeStart = $max - intval($range[1]);
         } else {
             // start at given range, eg Range: bytes=1000-2000 -> 1000
             $rangeStart = intval($range[0]);
-            if ($range[1] == '') {
+            if ('' == $range[1]) {
                 $rangeEnd = $max;
             } else {
                 // end at given range, eg Range: bytes=1000-2000 -> 2000

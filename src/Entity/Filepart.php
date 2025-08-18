@@ -3,13 +3,11 @@
 namespace App\Entity;
 
 use App\Repository\FilepartRepository;
-use App\Repository\FileRepository;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FilepartRepository::class)]
-#[ORM\UniqueConstraint(name: "name_idx", columns: ['name'])]
-#[ORM\UniqueConstraint(name: "filepart_idx", columns: ['file_id', 'partnumber'])]
+#[ORM\UniqueConstraint(name: 'name_idx', columns: ['name'])]
+#[ORM\UniqueConstraint(name: 'filepart_idx', columns: ['file_id', 'partnumber'])]
 class Filepart
 {
     #[ORM\Id]

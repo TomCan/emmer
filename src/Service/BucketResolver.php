@@ -15,7 +15,7 @@ class BucketResolver
 
     public function getFromRequest(Request $request): array
     {
-        if ($this->routingMode === 'host') {
+        if ('host' === $this->routingMode) {
             // bucketname is first part of host
             $host = $request->getHost();
             $parts = explode('.', $host);

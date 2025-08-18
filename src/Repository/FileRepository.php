@@ -22,9 +22,9 @@ class FileRepository extends ServiceEntityRepository
      */
     public function findPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $marker = '', int $maxKeys = 100, int $markerType = 1): iterable
     {
-        $escapedPrefix = str_replace(array('\\', '_', '%'), array('\\\\', '\\_', '\\%'), $prefix);
+        $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
 
-        $qb =  $this->createQueryBuilder('f')
+        $qb = $this->createQueryBuilder('f')
             ->andWhere('f.bucket = :bucket')
             ->andWhere('f.name LIKE :prefix')
             ->setParameter('bucket', $bucket)
@@ -32,7 +32,7 @@ class FileRepository extends ServiceEntityRepository
             ->orderBy('f.name', 'ASC');
 
         if ($marker) {
-            if ($markerType === 2) {
+            if (2 === $markerType) {
                 // treat as start-after
                 $qb
                     ->andWhere('f.name > :marker')

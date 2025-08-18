@@ -2,8 +2,6 @@
 
 namespace App\Controller\Api;
 
-use App\Entity\File;
-use App\Entity\Filepart;
 use App\Service\BucketService;
 use App\Service\GeneratorService;
 use App\Service\RequestService;
@@ -11,7 +9,6 @@ use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
 
 class AbortMultipartUpload extends AbstractController
 {

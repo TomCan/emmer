@@ -48,7 +48,7 @@ class GeneratorService
             }
         }
 
-        for ($i = 0; $i < $length; $i++) {
+        for ($i = 0; $i < $length; ++$i) {
             $char = rand(0, $max - 1);
             foreach (self::CLASS_DEF as $class) {
                 if ($classes & $class['match']) {
@@ -70,13 +70,13 @@ class GeneratorService
         $parts = [];
         if (is_array($groups)) {
             foreach ($groups as $group) {
-                $l = (int)($group['length'] ?? $length) ?: $length;
-                $c = (int)($group['classes'] ?? $classes) ?: $classes;
+                $l = (int) ($group['length'] ?? $length) ?: $length;
+                $c = (int) ($group['classes'] ?? $classes) ?: $classes;
                 $parts[] = $this->generateId($l, $c);
             }
         } elseif (is_int($groups)) {
             // create $groups number of parts of equal length
-            for ($i = 0; $i < $groups; $i++) {
+            for ($i = 0; $i < $groups; ++$i) {
                 $parts[] = $this->generateId($length, $classes);
             }
         } else {

@@ -26,7 +26,7 @@ class PutObject extends AbstractController
         $file = $bucketService->getFile($bucket, $key);
         if ($file) {
             // existing file
-            if ($request->headers->get('if-none-match', '') === '*') {
+            if ('*' === $request->headers->get('if-none-match', '')) {
                 // if-none-match is set, abort
                 return new Response('Precondition Failed', 412, ['X-Message' => 'Key already exists in bucket']);
             }
@@ -34,7 +34,7 @@ class PutObject extends AbstractController
             // get first filepart, which isn't guaranteed to be the first in the collection
             $filePart = null;
             foreach ($file->getFileparts() as $part) {
-                if ($part->getPartNumber() === 1) {
+                if (1 === $part->getPartNumber()) {
                     $filePart = $file->getFileparts()[0];
                     break;
                 }
@@ -55,7 +55,7 @@ class PutObject extends AbstractController
         }
 
         // check if-match header
-        if ($request->headers->get('if-match', '') !== '') {
+        if ('' !== $request->headers->get('if-match', '')) {
             $etags = explode(',', $request->headers->get('if-match', ''));
             $matches = false;
             foreach ($etags as $etag) {

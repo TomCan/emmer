@@ -6,9 +6,7 @@ use App\Controller\Api\AbortMultipartUpload;
 use App\Controller\Api\CompleteMultipartUpload;
 use App\Controller\Api\CreateMultipartUpload;
 use App\Controller\Api\DeleteObjects;
-use App\Controller\Api\PutObject;
 use App\Controller\Api\UploadPart;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -37,12 +35,12 @@ class RoutingListener implements EventSubscriberInterface
         if (preg_match('#^POST /([^/]+)/(.+)$#', $requestString, $matches)) {
             if ($request->query->has('uploads')) {
                 // Multipart upload: switch to CreateMultipartUpload controller
-                $request->attributes->set('_controller', CreateMultipartUpload::class.'::createMultipartUpload');;
+                $request->attributes->set('_controller', CreateMultipartUpload::class.'::createMultipartUpload');
                 $request->attributes->set('bucket', $matches[1]);
                 $request->attributes->set('key', $matches[2]);
             } elseif ($request->query->has('uploadId')) {
                 // Multipart upload: switch to CompleteMultipartUpload controller
-                $request->attributes->set('_controller', CompleteMultipartUpload::class.'::completeMultipartUpload');;
+                $request->attributes->set('_controller', CompleteMultipartUpload::class.'::completeMultipartUpload');
                 $request->attributes->set('bucket', $matches[1]);
                 $request->attributes->set('key', $matches[2]);
                 $request->attributes->set('uploadId', $request->query->get('uploadId'));
@@ -65,7 +63,7 @@ class RoutingListener implements EventSubscriberInterface
         if (preg_match('#^DELETE /([^/]+)/(.+)$#', $requestString, $matches)) {
             if ($request->query->has('uploadId')) {
                 // Multipart upload: switch to AbortMultipartUpload controller
-                $request->attributes->set('_controller', AbortMultipartUpload::class.'::abortMultipartUpload');;
+                $request->attributes->set('_controller', AbortMultipartUpload::class.'::abortMultipartUpload');
                 $request->attributes->set('bucket', $matches[1]);
                 $request->attributes->set('key', $matches[2]);
                 $request->attributes->set('uploadId', $request->query->get('uploadId'));

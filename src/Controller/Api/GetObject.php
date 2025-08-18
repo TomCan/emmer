@@ -66,12 +66,12 @@ class GetObject extends AbstractController
         $headers = [
             'Content-Type' => 'application/octet-stream',
             'Content-Length' => $file->getSize(),
-            'Last-Modified' => $file->getMtime()->format('D, d M Y H:i:s') . ' GMT',
+            'Last-Modified' => $file->getMtime()->format('D, d M Y H:i:s').' GMT',
             'ETag' => '"'.$file->getEtag().'"',
             'Accept-Ranges' => 'bytes',
         ];
 
-        if ($rangeStart !== 0 || $rangeEnd !== $file->getSize() - 1) {
+        if (0 !== $rangeStart || $rangeEnd !== $file->getSize() - 1) {
             $headers['Content-Range'] = 'bytes '.$rangeStart.'-'.$rangeEnd.'/'.$file->getSize();
             $headers['Content-Length'] = $rangeEnd - $rangeStart + 1;
         } else {
@@ -83,9 +83,8 @@ class GetObject extends AbstractController
         if ('HEAD' == $request->getMethod()) {
             return $responseService->createResponse([], 200, '', $headers);
         } else {
-//            var_dump($headers);die();
+            //            var_dump($headers);die();
             return $responseService->createFileStreamResponse($parts, $rangeStart, $rangeEnd, $headers);
         }
-
     }
 }

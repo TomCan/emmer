@@ -6,7 +6,7 @@ use App\Repository\BucketRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: BucketRepository::class)]
-#[ORM\UniqueConstraint(name: "name_idx", columns: ['name'])]
+#[ORM\UniqueConstraint(name: 'name_idx', columns: ['name'])]
 class Bucket
 {
     #[ORM\Id]

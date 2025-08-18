@@ -4,7 +4,6 @@ namespace App\Controller\Api;
 
 use App\Service\BucketService;
 use App\Service\ResponseService;
-use SimpleXMLElement;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,22 +25,22 @@ class DeleteObjects extends AbstractController
         }
 
         try {
-            $deleteRequest = new SimpleXMLElement($request->getContent());
+            $deleteRequest = new \SimpleXMLElement($request->getContent());
         } catch (\Exception $e) {
             return $responseService->createErrorResponse(400, 'MalformedXML', 'Malformed XML');
         }
 
         // must be Delete request
-        if ($deleteRequest->getName() !== 'Delete') {
+        if ('Delete' !== $deleteRequest->getName()) {
             return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request 1');
         }
 
-        if (count($deleteRequest->Object) === 0) {
+        if (0 === count($deleteRequest->Object)) {
             // must have at least one Object
             return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request 2');
         }
 
-        $quiet = (string)($deleteRequest->Quiet ?? 'false') === 'true';
+        $quiet = 'true' === (string) ($deleteRequest->Quiet ?? 'false');
         $deleted = [];
         $errors = [];
         foreach ($deleteRequest->Object as $object) {
@@ -49,10 +48,10 @@ class DeleteObjects extends AbstractController
                 return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request 3');
             }
 
-            $file = $bucketService->getFile($bucket, (string)$object->Key);
+            $file = $bucketService->getFile($bucket, (string) $object->Key);
             if (!$file) {
                 $errors[] = [
-                    'Key' => (string)$object->Key,
+                    'Key' => (string) $object->Key,
                     'Code' => 'NoSuchKey',
                     'Message' => 'The specified key does not exist.',
                     // VersionId
@@ -61,9 +60,9 @@ class DeleteObjects extends AbstractController
             }
 
             // check if ETag is present
-            if ($object->ETag && $file->getEtag() !== (string)$object->ETag) {
+            if ($object->ETag && $file->getEtag() !== (string) $object->ETag) {
                 $errors[] = [
-                    'Key' => (string)$object->Key,
+                    'Key' => (string) $object->Key,
                     'Code' => 'ETagMismatch',
                     'Message' => 'ETag Mismatch',
                     // VersionId
@@ -72,9 +71,9 @@ class DeleteObjects extends AbstractController
             }
 
             // check if LastModifiedTime is present
-            if ($object->LastModifiedTime && $file->getMtime() !== new \DateTime((string)$object->LastModifiedTime)) {
+            if ($object->LastModifiedTime && $file->getMtime() !== new \DateTime((string) $object->LastModifiedTime)) {
                 $errors[] = [
-                    'Key' => (string)$object->Key,
+                    'Key' => (string) $object->Key,
                     'Code' => 'LastModifiedTimeMismatch',
                     'Message' => 'LastModifiedTime Mismatch',
                     // VersionId
@@ -82,9 +81,9 @@ class DeleteObjects extends AbstractController
                 continue;
             }
 
-            if ($object->Size && $file->getSize() !== (int)$object->Size) {
+            if ($object->Size && $file->getSize() !== (int) $object->Size) {
                 $errors[] = [
-                    'Key' => (string)$object->Key,
+                    'Key' => (string) $object->Key,
                     'Code' => 'SizeMismatch',
                     'Message' => 'Size Mismatch',
                     // VersionId
@@ -113,14 +112,14 @@ class DeleteObjects extends AbstractController
 
             if ($failed) {
                 $errors[] = [
-                    'Key' => (string)$object->Key,
+                    'Key' => (string) $object->Key,
                     'Code' => 'FilesystemError',
                     'Message' => 'Filesystem Error',
                     // VersionId
                 ];
             } elseif (!$quiet) {
                 $deleted[] = [
-                    'Key' => (string)$object->Key,
+                    'Key' => (string) $object->Key,
                     'DeleteMarker' => 'false', // unsupported
                     // VersionId
                 ];
@@ -130,7 +129,7 @@ class DeleteObjects extends AbstractController
         $result = [
             'DeleteResult' => [
                 '@attributes' => ['xmlns' => 'http://s3.amazonaws.com/doc/2006-03-01/'],
-            ]
+            ],
         ];
 
         if (count($deleted) > 0) {

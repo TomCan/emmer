@@ -11,7 +11,6 @@ use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
 
 class CompleteMultipartUpload extends AbstractController
 {
@@ -31,7 +30,7 @@ class CompleteMultipartUpload extends AbstractController
                 return $responseService->createErrorResponse(400, 'MalformedXML', 'Malformed XML');
             }
 
-            if ($completeRequest->getName() !== 'CompleteMultipartUpload') {
+            if ('CompleteMultipartUpload' !== $completeRequest->getName()) {
                 return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request');
             }
 
@@ -39,12 +38,12 @@ class CompleteMultipartUpload extends AbstractController
             $fileParts = $file->getFileparts()->toArray();
             ksort($fileParts);
             foreach ($completeRequest->Part as $part) {
-                $partNumber = (int)$part->PartNumber;
+                $partNumber = (int) $part->PartNumber;
                 if ($partNumber !== count($parts) + 1) {
                     return $responseService->createErrorResponse(400, 'InvalidPartOrder', 'Invalid Part Order');
                 }
 
-                $etag = (string)$part->ETag;
+                $etag = (string) $part->ETag;
                 if (str_starts_with($etag, '"') && str_ends_with($etag, '"')) {
                     $etag = substr($etag, 1, -1);
                 }
@@ -57,7 +56,7 @@ class CompleteMultipartUpload extends AbstractController
 
             // we have all parts in the order we need them. Combine them into a single file
             $targetFile = $bucketService->getFile($bucket, $key);
-            if ($targetFile == null) {
+            if (null == $targetFile) {
                 $targetFile = new File();
                 $targetFile->setBucket($bucket);
                 $targetFile->setName($key);
@@ -107,7 +106,7 @@ class CompleteMultipartUpload extends AbstractController
                         'Bucket' => $bucket->getName(),
                         'Key' => $key,
                         'ETag' => '"'.$targetFile->getEtag().'"',
-                    ]
+                    ],
                 ]
             );
         } else {

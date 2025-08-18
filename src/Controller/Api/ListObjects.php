@@ -32,7 +32,7 @@ class ListObjects extends AbstractController
                 $marker = $startAfter;
                 $markerType = 2;
             }
-            $fetchOwner = $request->query->getString('fetch-owner', '') == 'true';
+            $fetchOwner = 'true' == $request->query->getString('fetch-owner', '');
         } else {
             $type = 1; // force value
             $marker = $request->query->getString('marker', '');
@@ -44,19 +44,19 @@ class ListObjects extends AbstractController
         $maxKeys = $request->query->getInt('max-keys', 100);
 
         $encodingType = $request->query->getString('encoding-type', '');
-        if ($encodingType && $encodingType != 'url') {
+        if ($encodingType && 'url' != $encodingType) {
             $encodingType = '';
         }
 
-        $objectList = $bucketService->listFiles($bucket, $prefix, $delimiter, $marker, $markerType,  $maxKeys);
+        $objectList = $bucketService->listFiles($bucket, $prefix, $delimiter, $marker, $markerType, $maxKeys);
         $data = [
             'ListBucketResult' => [
                 '@attributes' => ['xmlns' => 'http://s3.amazonaws.com/doc/2006-03-01/'],
                 'Name' => $bucket->getName(),
-                'Prefix' => ($encodingType == 'url') ? urlencode($prefix) : $prefix,
+                'Prefix' => ('url' == $encodingType) ? urlencode($prefix) : $prefix,
                 'MaxKeys' => $maxKeys,
                 'IsTruncated' => $objectList->isTruncated() ? 'true' : 'false',
-            ]
+            ],
         ];
 
         // add EncodingType is set
@@ -66,7 +66,7 @@ class ListObjects extends AbstractController
 
         // add Delimiter if set
         if ($delimiter) {
-            $data['ListBucketResult']['Delimiter'] = ($encodingType == 'url') ? urlencode($delimiter) : $delimiter;
+            $data['ListBucketResult']['Delimiter'] = ('url' == $encodingType) ? urlencode($delimiter) : $delimiter;
         }
 
         if (1 === $type) {
@@ -84,7 +84,7 @@ class ListObjects extends AbstractController
 
             // add StartAfter if set
             if ($startAfter) {
-                $data['ListBucketResult']['StartAfter'] = ($encodingType == 'url') ? urlencode($startAfter) : $startAfter;
+                $data['ListBucketResult']['StartAfter'] = ('url' == $encodingType) ? urlencode($startAfter) : $startAfter;
             }
 
             if ($marker) {
@@ -100,7 +100,7 @@ class ListObjects extends AbstractController
             $data['ListBucketResult']['#Contents'] = [];
             foreach ($objectList->getFiles() as $file) {
                 $item = [
-                    'Key' => ($encodingType == 'url') ? urlencode($file->getName()) : $file->getName(),
+                    'Key' => ('url' == $encodingType) ? urlencode($file->getName()) : $file->getName(),
                     'LastModified' => $file->getMtime()->format('c'),
                     'ETag' => '"'.$file->getEtag().'"',
                     'Size' => $file->getSize(),
@@ -120,7 +120,7 @@ class ListObjects extends AbstractController
             $data['ListBucketResult']['#CommonPrefixes'] = [];
             foreach ($objectList->getCommonPrefixes() as $prefix) {
                 $data['ListBucketResult']['#CommonPrefixes'][] = [
-                    'Prefix' => ($encodingType == 'url') ? urlencode($prefix) : $prefix,
+                    'Prefix' => ('url' == $encodingType) ? urlencode($prefix) : $prefix,
                 ];
             }
         }

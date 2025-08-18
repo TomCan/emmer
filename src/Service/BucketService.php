@@ -20,7 +20,8 @@ class BucketService
         private EntityManagerInterface $entityManager,
         private GeneratorService $generatorService,
         private string $bucketStoragePath,
-    ) {}
+    ) {
+    }
 
     public function getBucket(string $name): ?Bucket
     {
@@ -61,7 +62,7 @@ class BucketService
             // we need to group files, request
             $iterator = $this->fileRepository->findPagedByBucketAndPrefix($bucket, $prefix, $marker, 0, $markerType);
         } else {
-            $iterator = $this->fileRepository->findPagedByBucketAndPrefix($bucket, $prefix, $marker, $maxKeys +1, $markerType);
+            $iterator = $this->fileRepository->findPagedByBucketAndPrefix($bucket, $prefix, $marker, $maxKeys + 1, $markerType);
         }
 
         // delimiter, return files without delimiter, and group those with delimiter
@@ -77,7 +78,7 @@ class BucketService
 
             if ($delimiter) {
                 $fileName = $file->getName();
-                if ($prefix !== '') {
+                if ('' !== $prefix) {
                     // remove prefix from file name
                     $fileName = substr($fileName, strlen($prefix));
                 }

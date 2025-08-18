@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use SimpleXMLElement;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -10,8 +9,7 @@ class ResponseService
 {
     public function __construct(
         private GeneratorService $generatorService,
-    )
-    {
+    ) {
     }
 
     private array $defaultHeaders = [
@@ -62,19 +60,20 @@ class ResponseService
                 array_merge(
                     $this->defaultHeaders,
                     [
-                        'Content-Type' => $contentType
+                        'Content-Type' => $contentType,
                     ],
                     $headers,
                 )
             );
         }
+
         return new Response(
             $this->arrayToXmlString($data[array_key_first($data)], array_key_first($data)),
             $status,
             array_merge(
                 $this->defaultHeaders,
                 [
-                    'Content-Type' => $contentType
+                    'Content-Type' => $contentType,
                 ],
                 $headers,
             )
@@ -93,7 +92,7 @@ class ResponseService
                 $remaining = -1 == $rangeStart ? -1 : $rangeEnd - $rangeStart + 1;
 
                 foreach ($fileParts as $filePart) {
-                    if ($remaining == 0) {
+                    if (0 == $remaining) {
                         // range processed, done
                         break;
                     } elseif ($rangeStart > 0 && $rangeStart >= filesize($filePart)) {
@@ -113,27 +112,27 @@ class ResponseService
                                 $read = stream_copy_to_stream($fp, $outputStream, $chunkSize);
                             }
                             if (false === $read) {
-                                throw new \RuntimeException('Stream copy error for file: ' . $filePart);
+                                throw new \RuntimeException('Stream copy error for file: '.$filePart);
                             } else {
                                 if ($remaining > 0) {
                                     $remaining -= $read;
                                 }
                             }
 
-                            $chunk++;
-                            if ($chunk % 1000 == 0) {
+                            ++$chunk;
+                            if (0 == $chunk % 1000) {
                                 flush();
                             }
                         }
                         fclose($fp);
                     } else {
-                        throw new \RuntimeException('Unable to open file: ' . $filePart);
+                        throw new \RuntimeException('Unable to open file: '.$filePart);
                     }
                 }
 
                 fclose($outputStream);
             },
-            $rangeStart !== -1 ? 206 : 200,
+            -1 !== $rangeStart ? 206 : 200,
             array_merge(
                 $this->defaultHeaders,
                 $headers,
@@ -148,11 +147,11 @@ class ResponseService
         return $xml->asXML();
     }
 
-    private function arrayToXml($array, ?string $rootElement = 'root', SimpleXMLElement $xml = null): SimpleXMLElement
+    private function arrayToXml($array, ?string $rootElement = 'root', ?\SimpleXMLElement $xml = null): \SimpleXMLElement
     {
         // create new element if not provided
-        if ($xml === null) {
-            $xml = new SimpleXMLElement('<' . $rootElement . '/>');
+        if (null === $xml) {
+            $xml = new \SimpleXMLElement('<'.$rootElement.'/>');
             // check for attributes on root element
             if (isset($array['@attributes']) && is_array($array['@attributes'])) {
                 // Add attributes
@@ -172,7 +171,7 @@ class ResponseService
         foreach ($array as $key => $value) {
             // Handle numeric keys by adding a prefix
             if (is_numeric($key)) {
-                $key = 'item_' . $key;
+                $key = 'item_'.$key;
             }
 
             // Handle arrays (nested elements)
