@@ -25,9 +25,9 @@ This project is in early development and by no means ready for production use.
 | Regions              | ❌ |
 | Signed URLs          | ❌ |
 | Slim controllers     | ❌ |
-| Coding standards     | ❌ |
+| Coding standards     | ✅ |
 | Unit tests           | ❌ |
-| Static analyser      | ❌ |
+| Static analyser      | ✅ |
 
 A checkbox means it has some support, not that it's fully implemented and 100% compatible with every feature of the S3 API.
 
