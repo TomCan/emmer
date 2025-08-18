@@ -114,11 +114,33 @@ class BucketService
         }
     }
 
-    public function deleteFile(File $file, bool $flush = true): void
+    public function deleteFile(File $file, bool $deleteFromStorage = true, bool $flush = true): void
     {
+        foreach ($file->getFileparts() as $filepart) {
+            $this->deleteFilepart($filepart, $deleteFromStorage, false);
+        }
+
         $this->entityManager->remove($file);
         if ($flush) {
             $this->entityManager->flush();
+        }
+    }
+
+    public function deleteFilepart(Filepart $filepart, bool $deleteFromStorage = true, bool $flush = true): void
+    {
+        $path = $this->getAbsolutePartPath($filepart);
+
+        $filepart->setFile(null);
+        $this->entityManager->remove($filepart);
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+
+        if ($deleteFromStorage) {
+            if (file_exists($path)) {
+                unlink($path);
+            }
         }
     }
 }

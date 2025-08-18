@@ -60,7 +60,15 @@ class CompleteMultipartUpload extends AbstractController
                 $targetFile = new File();
                 $targetFile->setBucket($bucket);
                 $targetFile->setName($key);
+            } else {
+                // existing file, delete existing parts
+                foreach ($targetFile->getFileparts() as $part) {
+                    $bucketService->deleteFilepart($part, true, false);
+                }
+                $targetFile->getFileparts()->clear();
+                $bucketService->saveFile($targetFile);
             }
+
             $targetPart = new Filepart();
             $targetFile->addFilepart($targetPart);
             $targetPart->setPartNumber(1);
@@ -90,13 +98,9 @@ class CompleteMultipartUpload extends AbstractController
             $targetPart->setEtag($targetFile->getEtag());
             $targetPart->setMtime($targetFile->getMtime());
 
+            // first delete the old file, then save the new one to prevent duplicate keys
+            $bucketService->deleteFile($file, true);
             $bucketService->saveFile($targetFile);
-
-            foreach ($parts as $part) {
-                $partPath = $bucketService->getAbsolutePartPath($part);
-                unlink($partPath);
-            }
-            $bucketService->deleteFile($file);
 
             return $responseService->createResponse(
                 [

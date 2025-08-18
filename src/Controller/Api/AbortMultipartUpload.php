@@ -23,13 +23,7 @@ class AbortMultipartUpload extends AbstractController
         $headers = [];
         $file = $bucketService->getFile($bucket, '{emmer:mpu:'.$uploadId.'}'.$key);
         if ($file) {
-            foreach ($file->getFileparts() as $part) {
-                $partPath = $bucketService->getAbsolutePartPath($part);
-                $ul = unlink($partPath);
-                $headers[] = 'X-Emmer-Part-'.$part->getPartNumber().'-Status: '.$partPath;
-            }
-
-            $bucketService->deleteFile($file);
+            $bucketService->deleteFile($file, true, true);
 
             return $responseService->createResponse(
                 [],
