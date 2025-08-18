@@ -20,7 +20,7 @@ class UploadPart extends AbstractController
         }
 
         if ($partNumber < 1 || $partNumber > 10000) {
-            return $responseService->createErrorResponse('400', 'InvalidPart', 'The specified part number is not valid.');
+            return $responseService->createErrorResponse(400, 'InvalidPart', 'The specified part number is not valid.');
         }
 
         // check if key already exists in bucket
@@ -61,7 +61,7 @@ class UploadPart extends AbstractController
             );
         } else {
             // need exisiting multipart upload
-            return $responseService->createErrorResponse('404', 'NoSuchUpload', 'The specified multipart upload does not exist. The upload ID may be invalid, or the multipart upload may have been aborted or completed.');
+            return $responseService->createErrorResponse(404, 'NoSuchUpload', 'The specified multipart upload does not exist. The upload ID may be invalid, or the multipart upload may have been aborted or completed.');
         }
     }
 }

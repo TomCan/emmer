@@ -11,7 +11,7 @@ class RequestService
         // if-match + if-unmodified-since
         if ($request->headers->has('if-match') && $request->headers->has('if-unmodified-since')) {
             // match + not unmodified = serve
-            if ($this->isIfMatch($request, $etagValue) && !$this->isUnmodifiedSince($request, $objectTime)) {
+            if ($this->etagHeaderMatches($request->headers->get('if-match'), $etagValue) && ($objectTime < new \DateTime($request->headers->get('if-unmodified-since')))) {
                 return 200;
             }
         }
@@ -19,7 +19,7 @@ class RequestService
         // if-none-match + if-modified-since
         if ($request->headers->has('if-none-match') && $request->headers->has('if-modified-since')) {
             // !none-match + modified = serve
-            if (!$this->isIfNoneMatch($request, $etagValue) && $this->isModifiedSince($request, $objectTime)) {
+            if (!$this->etagHeaderMatches($request->headers->get('if-none-match'), $etagValue) && ($objectTime > new \DateTime($request->headers->get('if-modified-since')))) {
                 return 304;
             }
         }
@@ -64,7 +64,7 @@ class RequestService
         return 200;
     }
 
-    public function etagHeaderMatches($headerValue, $etagValue)
+    public function etagHeaderMatches(string $headerValue, string $etagValue): bool
     {
         $values = explode(',', $headerValue);
         foreach ($values as $value) {
@@ -83,6 +83,9 @@ class RequestService
         return false;
     }
 
+    /**
+     * @return int[]
+     */
     public function getRange(string $headerValue, int $max): array
     {
         // only use first range
@@ -111,6 +114,7 @@ class RequestService
         if ('' == $range[0]) {
             // bytes from back, eg Range: bytes=-1000
             $rangeStart = $max - intval($range[1]);
+            $rangeEnd = $max;
         } else {
             // start at given range, eg Range: bytes=1000-2000 -> 1000
             $rangeStart = intval($range[0]);

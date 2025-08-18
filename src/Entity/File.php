@@ -32,6 +32,7 @@ class File
     #[ORM\JoinColumn(nullable: false)]
     private ?Bucket $bucket = null;
 
+    /** @var Collection<int, Filepart> */
     #[ORM\OneToMany(targetEntity: Filepart::class, mappedBy: 'file', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $fileparts;
 

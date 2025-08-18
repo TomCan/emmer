@@ -12,6 +12,7 @@ class ResponseService
     ) {
     }
 
+    /** @var array<string, string> */
     private array $defaultHeaders = [
         'x-generator' => 'Emmer',
     ];
@@ -48,6 +49,10 @@ class ResponseService
         );
     }
 
+    /**
+     * @param mixed[] $data
+     * @param mixed[] $headers
+     */
     public function createResponse(array $data, int $status = 200, string $contentType = 'application/xml', array $headers = []): Response
     {
         // generate unique id
@@ -80,6 +85,10 @@ class ResponseService
         );
     }
 
+    /**
+     * @param array<string> $fileParts
+     * @param mixed[]       $headers
+     */
     public function createFileStreamResponse(array $fileParts, int $rangeStart, int $rangeEnd, array $headers = []): Response
     {
         $this->defaultHeaders['x-emmer-id'] = 'emr-'.$this->generatorService->generateId(32);
@@ -140,14 +149,20 @@ class ResponseService
         );
     }
 
-    private function arrayToXmlString($array, $rootElement = 'root'): string
+    /**
+     * @param mixed[] $array
+     */
+    private function arrayToXmlString(array $array, string $rootElement = 'root'): string
     {
         $xml = $this->arrayToXml($array, $rootElement);
 
         return $xml->asXML();
     }
 
-    private function arrayToXml($array, ?string $rootElement = 'root', ?\SimpleXMLElement $xml = null): \SimpleXMLElement
+    /**
+     * @param mixed[] $array
+     */
+    private function arrayToXml(array $array, ?string $rootElement = 'root', ?\SimpleXMLElement $xml = null): \SimpleXMLElement
     {
         // create new element if not provided
         if (null === $xml) {
@@ -172,6 +187,8 @@ class ResponseService
             // Handle numeric keys by adding a prefix
             if (is_numeric($key)) {
                 $key = 'item_'.$key;
+            } else {
+                $key = (string) $key;
             }
 
             // Handle arrays (nested elements)
@@ -180,6 +197,9 @@ class ResponseService
                 if (isset($value['@attributes']) && is_array($value['@attributes'])) {
                     // Create child element
                     $child = $xml->addChild($key);
+                    if (!$child) {
+                        throw new \RuntimeException('Unable to add child element: '.$key);
+                    }
 
                     // Add attributes
                     foreach ($value['@attributes'] as $attrKey => $attrValue) {
@@ -192,6 +212,7 @@ class ResponseService
 
                     // If there's a text value along with attributes
                     if (isset($contentArray['@text'])) {
+                        /* @phpstan-ignore offsetAssign.valueType */
                         $child[0] = htmlspecialchars($contentArray['@text']);
                         unset($contentArray['@text']);
                     }

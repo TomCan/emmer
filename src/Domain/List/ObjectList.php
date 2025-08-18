@@ -7,7 +7,9 @@ use App\Entity\File;
 class ObjectList
 {
     private bool $truncated = false;
+    /** @var File[] */
     private array $files = [];
+    /** @var string[] */
     private array $commonPrefixes = [];
     private string $nextMarker = '';
 
@@ -21,6 +23,9 @@ class ObjectList
         $this->truncated = $truncated;
     }
 
+    /**
+     * @return File[]
+     */
     public function getFiles(): array
     {
         return $this->files;
@@ -31,6 +36,9 @@ class ObjectList
         $this->files[] = $file;
     }
 
+    /**
+     * @return string[]
+     */
     public function getCommonPrefixes(): array
     {
         return $this->commonPrefixes;

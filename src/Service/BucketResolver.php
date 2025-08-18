@@ -13,6 +13,9 @@ class BucketResolver
         $this->routingMode = $routingMode;
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function getFromRequest(Request $request): array
     {
         if ('host' === $this->routingMode) {
