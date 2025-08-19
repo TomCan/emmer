@@ -59,7 +59,7 @@ class AccessKeyCreateCommand extends Command
         }
 
         $accessKey->setName('EMR'.$this->generatorService->generateId(17, GeneratorService::CLASS_UPPER + GeneratorService::CLASS_NUMBER));
-        $accessKey->setSecret($this->generatorService->generateId(40));
+        $accessKey->setSecret(base64_encode(random_bytes(30)));
 
         $this->entityManager->persist($accessKey);
         $this->entityManager->flush();
