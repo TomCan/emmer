@@ -10,7 +10,7 @@ This project is in early development and by no means ready for production use.
 
 | Feature              | Status |
 |----------------------|--------|
-| Authentication       | ❌ |
+| Authentication       | ✅❌ |
 | Authorization        | ❌ |
 | List buckets         | ❌ |
 | Create bucket        | ❌ |
@@ -18,7 +18,7 @@ This project is in early development and by no means ready for production use.
 | List objects         | ✅ |
 | Get/Head object      | ✅ |
 | Put object (v1 + v2) | ✅ |
-| Multi-part uploads   | ✅❌ |
+| Multi-part uploads   | ✅ |
 | Delete object        | ✅ |
 | Delete objects       | ✅ |
 | Versioning           | ❌ |
