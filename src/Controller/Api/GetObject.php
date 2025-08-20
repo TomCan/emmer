@@ -3,6 +3,8 @@
 namespace App\Controller\Api;
 
 use App\Entity\File;
+use App\Entity\User;
+use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\RequestService;
 use App\Service\ResponseService;
@@ -10,14 +12,29 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class GetObject extends AbstractController
 {
     #[Route('/{bucket}/{key}', name: 'get_object', methods: ['HEAD', 'GET'], requirements: ['key' => '.+'])]
-    public function getObject(RequestService $requestService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
+    public function getObject(AuthorizationService $authorizationService, RequestService $requestService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
+            return $responseService->createForbiddenResponse();
+        }
+
+        /** @var ?User $user */
+        $user = $this->getUser();
+        try {
+            $authorizationService->requireAll(
+                $user,
+                [
+                    ['action' => 's3:GetObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$key],
+                ],
+                $bucket,
+            );
+        } catch (AccessDeniedException $e) {
             return $responseService->createForbiddenResponse();
         }
 

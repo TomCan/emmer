@@ -3,19 +3,36 @@
 namespace App\Controller\Api;
 
 use App\Entity\Filepart;
+use App\Entity\User;
+use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\GeneratorService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class UploadPart extends AbstractController
 {
-    public function uploadPart(GeneratorService $generatorService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId, int $partNumber): Response
+    public function uploadPart(AuthorizationService $authorizationService, GeneratorService $generatorService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId, int $partNumber): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
+            return $responseService->createForbiddenResponse();
+        }
+
+        /** @var ?User $user */
+        $user = $this->getUser();
+        try {
+            $authorizationService->requireAll(
+                $user,
+                [
+                    ['action' => 's3:PutObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$key],
+                ],
+                $bucket,
+            );
+        } catch (AccessDeniedException $e) {
             return $responseService->createForbiddenResponse();
         }
 

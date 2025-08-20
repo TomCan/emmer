@@ -2,20 +2,37 @@
 
 namespace App\Controller\Api;
 
+use App\Entity\User;
+use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class ListObjects extends AbstractController
 {
     #[Route('/{bucket}', name: 'list_objects', methods: ['GET'])]
-    public function listObjects(ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket): Response
+    public function listObjects(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
+            return $responseService->createForbiddenResponse();
+        }
+
+        /** @var ?User $user */
+        $user = $this->getUser();
+        try {
+            $authorizationService->requireAll(
+                $user,
+                [
+                    ['action' => 's3:ListObjects', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$request->query->getString('prefix', '')],
+                ],
+                $bucket,
+            );
+        } catch (AccessDeniedException $e) {
             return $responseService->createForbiddenResponse();
         }
 

@@ -2,20 +2,27 @@
 
 namespace App\Controller\Api;
 
+use App\Entity\User;
+use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class DeleteObjects extends AbstractController
 {
-    public function deleteObjects(ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket): Response
+    public function deleteObjects(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
             return $responseService->createForbiddenResponse();
         }
+
+        /** @var ?User $user */
+        $user = $this->getUser();
+
         if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_starts_with($bucket->getPath(), '\\')) {
             // full path
             $bucketPath = $bucket->getPath();
@@ -46,6 +53,24 @@ class DeleteObjects extends AbstractController
         foreach ($deleteRequest->Object as $object) {
             if (!$object->Key) {
                 return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request 3');
+            }
+
+            try {
+                $authorizationService->requireAll(
+                    $user,
+                    [
+                        ['action' => 's3:DeleteObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$object->Key],
+                    ],
+                    $bucket,
+                );
+            } catch (AccessDeniedException $e) {
+                $errors[] = [
+                    'Key' => (string) $object->Key,
+                    'Code' => 'AccessDenied',
+                    'Message' => 'Access Denied.',
+                    // VersionId
+                ];
+                continue;
             }
 
             $file = $bucketService->getFile($bucket, (string) $object->Key);
