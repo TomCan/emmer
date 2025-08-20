@@ -129,7 +129,6 @@ class PolicyResolver
             }
         }
 
-
         // flatten principals
         if (!isset($statement['Principal'])) {
             $statement['Principal'] = [];
