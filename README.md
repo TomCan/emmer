@@ -10,8 +10,8 @@ This project is in early development and by no means ready for production use.
 
 | Feature              | Status |
 |----------------------|--------|
-| Authentication       | ✅❌ |
-| Authorization        | ❌ |
+| Authentication       | ✅ |
+| Authorization        | ✅ |
 | List buckets         | ❌ |
 | Create bucket        | ❌ |
 | Delete bucket        | ❌ |
@@ -26,7 +26,7 @@ This project is in early development and by no means ready for production use.
 | Signed URLs          | ❌ |
 | Slim controllers     | ❌ |
 | Coding standards     | ✅ |
-| Unit tests           | ❌ |
+| Unit tests           | ✅❌ |
 | Static analyser      | ✅ |
 
 A checkbox means it has some support, not that it's fully implemented and 100% compatible with every feature of the S3 API.
