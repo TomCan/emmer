@@ -192,22 +192,30 @@ class PolicyResolver
 
     /**
      * @param array<array{Sid: string, Effect: string, Principal: string[], Action: string[], Resource: string[]}> $statements
+     * @param string[] $principals
      */
-    public function isCallPermitted(array $statements, string $principal, string $action, string $resource): bool
+    public function isCallPermitted(array $statements, array $principals, string $action, string $resource): bool
     {
-        $permitted = false;
-        foreach ($statements as $statement) {
-            $result = $this->evaluateStatement($statement, $principal, $action, $resource);
-            if (1 === $result) {
-                // statement matches and allows. Still process other statements in case of denies.
-                $permitted = true;
-            } elseif (-1 === $result) {
-                // statement matches and denies. No need to continue.
-                return false;
+        foreach ($principals as $principal) {
+            $permitted = false;
+            foreach ($statements as $statement) {
+                $result = $this->evaluateStatement($statement, $principal, $action, $resource);
+                if (1 === $result) {
+                    // statement matches and allows. Still process other statements in case of denies.
+                    $permitted = true;
+                } elseif (-1 === $result) {
+                    // statement matches and denies. No need to continue.
+                    return false;
+                }
+            }
+            if ($permitted) {
+                // we got a matching principal, so no need to continue
+                return true;
             }
         }
 
-        return $permitted;
+        // no matching statements
+        return false;
     }
 
     /**
