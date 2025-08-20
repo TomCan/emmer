@@ -192,7 +192,7 @@ class PolicyResolver
 
     /**
      * @param array<array{Sid: string, Effect: string, Principal: string[], Action: string[], Resource: string[]}> $statements
-     * @param string[] $principals
+     * @param string[]                                                                                             $principals
      */
     public function isCallPermitted(array $statements, array $principals, string $action, string $resource): bool
     {
