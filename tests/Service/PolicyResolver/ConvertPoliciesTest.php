@@ -13,8 +13,9 @@ class ConvertPoliciesTest extends TestCase
 {
     private PolicyResolver $policyResolver;
 
-    private $validStatement = '{"Effect":"Allow","Action":["s3:GetObject"]}';
-    private $validStatementResult = ['Effect' => 'Allow', 'Action' => ['s3:GetObject'], 'Principal' => [], 'Resource' => []];
+    private string $validStatement = '{"Effect":"Allow","Action":["s3:GetObject"]}';
+    /** @var mixed[] */
+    private array $validStatementResult = ['Effect' => 'Allow', 'Action' => ['s3:GetObject'], 'Principal' => [], 'Resource' => []];
 
     protected function setUp(): void
     {

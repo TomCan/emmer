@@ -15,6 +15,10 @@ class ValidateStatementTest extends TestCase
         $this->policyResolver = new PolicyResolver();
     }
 
+    /**
+     * @param mixed[]      $statement
+     * @param mixed[]|null $expected
+     */
     #[DataProvider('statementsProvider')]
     public function testValidateStatement(array $statement, ?array $expected): void
     {
@@ -28,6 +32,9 @@ class ValidateStatementTest extends TestCase
     }
 
     // Data Provider
+    /**
+     * @return mixed[]
+     */
     public static function statementsProvider(): array
     {
         return [

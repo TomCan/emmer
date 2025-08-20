@@ -15,6 +15,9 @@ class ConvertToStatementsTest extends TestCase
         $this->policyResolver = new PolicyResolver();
     }
 
+    /**
+     * @param mixed[]|null $expected
+     */
     #[DataProvider('policyProvider')]
     public function testConvertToStatements(string $policy, ?array $expected): void
     {
@@ -28,6 +31,9 @@ class ConvertToStatementsTest extends TestCase
     }
 
     // Data Provider
+    /**
+     * @return mixed[]
+     */
     public static function policyProvider(): array
     {
         $validStatement = '{"Effect":"Allow","Action":["s3:GetObject"]}';

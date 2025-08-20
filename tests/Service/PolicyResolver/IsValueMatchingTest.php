@@ -28,6 +28,9 @@ class IsValueMatchingTest extends TestCase
     }
 
     // Data Provider
+    /**
+     * @return mixed[]
+     */
     public static function valueMatchingProvider(): array
     {
         return [
