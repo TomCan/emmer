@@ -29,9 +29,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string')]
     private ?string $password = null;
 
+    /**
+     * @var Collection<int, Policy>
+     */
+    #[ORM\OneToMany(targetEntity: Policy::class, mappedBy: 'user')]
+    private Collection $policies;
+
     public function __construct()
     {
         $this->accessKeys = new ArrayCollection();
+        $this->policies = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -103,6 +110,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Policy>
+     */
+    public function getPolicies(): Collection
+    {
+        return $this->policies;
+    }
+
+    public function addPolicy(Policy $policy): static
+    {
+        if (!$this->policies->contains($policy)) {
+            $this->policies->add($policy);
+            $policy->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removePolicy(Policy $policy): static
+    {
+        if ($this->policies->removeElement($policy)) {
+            // set the owning side to null (unless already changed)
+            if ($policy->getUser() === $this) {
+                $policy->setUser(null);
+            }
+        }
 
         return $this;
     }
