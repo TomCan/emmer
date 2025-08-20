@@ -71,6 +71,14 @@ class EvaluateStatementTest extends TestCase
                 'emr:bucket:my-bucket/somefile.txt',
                 0,
             ],
+            // * match of principal, exact match on resource
+            [
+                array_merge($baseStatement, ['Principal' => ['*'], 'Resource' => ['emr:bucket:my-bucket/somefile.txt']]),
+                'emr:user:tom',
+                's3:GetObject',
+                'emr:bucket:my-bucket/somefile.txt',
+                1,
+            ],
             // exact match of principal and resource, but Deny effect
             [
                 array_merge($baseStatement, ['Effect' => 'Deny', 'Principal' => ['emr:user:tom'], 'Resource' => ['emr:bucket:my-bucket/somefile.txt']]),

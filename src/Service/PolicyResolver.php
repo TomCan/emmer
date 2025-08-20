@@ -230,7 +230,8 @@ class PolicyResolver
     {
         $matches = false;
         foreach ($statement['Principal'] as $statementPrincipal) {
-            if ($statementPrincipal == $principal) {
+            // principal does not support wildcards, except for * which matches everything
+            if ('*' === $statementPrincipal || $statementPrincipal == $principal) {
                 $matches = true;
                 break;
             }
