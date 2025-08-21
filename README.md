@@ -29,14 +29,15 @@ This project is in early development and by no means ready for production use.
 | Regions              | ❌      |
 | Signed URLs          | ❌      |
 
-| Development features | Status |
-|----------------------|--------|
-| Slim controllers     | ❌      |
-| Services             | ✅❌     |
-| Exceptions           | ✅❌     |
-| Coding standards     | ✅      |
-| Unit tests           | ✅❌     |
-| Static analyser      | ✅      |
+| Project features | Status |
+|------------------|--------|
+| Documentation    | ❌      |
+| Slim controllers | ❌      |
+| Services         | ✅❌     |
+| Exceptions       | ✅❌     |
+| Coding standards | ✅      |
+| Unit tests       | ✅❌     |
+| Static analyser  | ✅      |
 
 A checkbox means it has some support, not that it's fully implemented and 100% compatible with every feature of the S3 API.
 
