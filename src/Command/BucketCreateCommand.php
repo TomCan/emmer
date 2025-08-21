@@ -64,7 +64,7 @@ class BucketCreateCommand extends Command
         }
 
         try {
-            $bucket = $this->bucketService->createBucket($name, '', $path, $user, !$input->getOption('no-policies'), true);
+            $bucket = $this->bucketService->createBucket($name, $user, '', $path, !$input->getOption('no-policies'), true);
             $io->success('Bucket created.'.PHP_EOL.$bucket->getIdentifier());
 
             return Command::SUCCESS;

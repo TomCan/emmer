@@ -31,7 +31,7 @@ class BucketService
         return $this->bucketRepository->findOneBy(['name' => $name]);
     }
 
-    public function createBucket(string $name, string $description = '', string $path = '', User $user, bool $addDefaultPolicies = true, bool $flush = true): Bucket
+    public function createBucket(string $name, User $user, string $description = '', string $path = '', bool $addDefaultPolicies = true, bool $flush = true): Bucket
     {
         $bucket = new Bucket();
         $bucket->setOwner($user);

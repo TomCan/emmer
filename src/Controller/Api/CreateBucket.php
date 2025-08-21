@@ -2,8 +2,6 @@
 
 namespace App\Controller\Api;
 
-use App\Entity\File;
-use App\Entity\Filepart;
 use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
@@ -49,7 +47,7 @@ class CreateBucket extends AbstractController
         }
 
         try {
-            $createdBucket = $bucketService->createBucket($bucket, '', '', $user, true, true);
+            $createdBucket = $bucketService->createBucket($bucket, $user, '', '', true, true);
         } catch (\Exception $e) {
             return $responseService->createErrorResponse(500, 'BucketCreationFailed', 'Bucket creation failed.'.$e->getMessage());
         }
