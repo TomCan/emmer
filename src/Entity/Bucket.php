@@ -111,4 +111,9 @@ class Bucket
 
         return $this;
     }
+
+    public function getIdentifier(): string
+    {
+        return 'emr:bucket:'.$this->name;
+    }
 }
