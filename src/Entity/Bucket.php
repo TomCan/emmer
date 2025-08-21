@@ -31,9 +31,17 @@ class Bucket
     #[ORM\OneToMany(targetEntity: Policy::class, mappedBy: 'bucket')]
     private Collection $policies;
 
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $owner = null;
+
+    #[ORM\Column]
+    private ?\DateTime $ctime = null;
+
     public function __construct()
     {
         $this->policies = new ArrayCollection();
+        $this->ctime = new \DateTime();
     }
 
     public function getId(): ?int
@@ -115,5 +123,29 @@ class Bucket
     public function getIdentifier(): string
     {
         return 'emr:bucket:'.$this->name;
+    }
+
+    public function getOwner(): ?User
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?User $owner): static
+    {
+        $this->owner = $owner;
+
+        return $this;
+    }
+
+    public function getCtime(): ?\DateTime
+    {
+        return $this->ctime;
+    }
+
+    public function setCtime(\DateTime $ctime): static
+    {
+        $this->ctime = $ctime;
+
+        return $this;
     }
 }
