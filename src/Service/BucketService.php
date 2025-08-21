@@ -31,13 +31,10 @@ class BucketService
         return $this->bucketRepository->findOneBy(['name' => $name]);
     }
 
-    public function createBucket(string $name, string $description = '', string $path = '', ?User $user = null, bool $addDefaultPolicies = true, bool $flush = true): Bucket
+    public function createBucket(string $name, string $description = '', string $path = '', User $user, bool $addDefaultPolicies = true, bool $flush = true): Bucket
     {
-        if (null == $user && $addDefaultPolicies) {
-            throw new \InvalidArgumentException('Cannot add default policies without user');
-        }
-
         $bucket = new Bucket();
+        $bucket->setOwner($user);
         $bucket->setName($name);
         $bucket->setDescription($description);
         if ($path) {
