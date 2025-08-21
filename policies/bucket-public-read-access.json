@@ -1,0 +1,10 @@
+{
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Principal": "*",
+            "Resource": "emr:bucket:{bucket-name}/*"
+        }
+    ]
+}
