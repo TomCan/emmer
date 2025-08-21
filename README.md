@@ -14,7 +14,7 @@ This project is in early development and by no means ready for production use.
 | Authorization        | ✅ |
 | List buckets         | ✅ |
 | Head bucket          | ✅ |
-| Create bucket        | ❌ |
+| Create bucket        | ✅ |
 | Delete bucket        | ❌ |
 | List objects         | ✅ |
 | Get/Head object      | ✅ |
