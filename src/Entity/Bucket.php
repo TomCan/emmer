@@ -28,7 +28,7 @@ class Bucket
     /**
      * @var Collection<int, Policy>
      */
-    #[ORM\OneToMany(targetEntity: Policy::class, mappedBy: 'bucket')]
+    #[ORM\OneToMany(targetEntity: Policy::class, mappedBy: 'bucket', cascade: ['remove'], orphanRemoval: true)]
     private Collection $policies;
 
     #[ORM\ManyToOne]
