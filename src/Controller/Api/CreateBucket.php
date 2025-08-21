@@ -3,6 +3,7 @@
 namespace App\Controller\Api;
 
 use App\Entity\User;
+use App\Exception\Bucket\BucketExistsException;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\GeneratorService;
@@ -37,29 +38,26 @@ class CreateBucket extends AbstractController
             return $responseService->createForbiddenResponse();
         }
 
-        $existingBucket = $bucketService->getBucket($bucket);
-        if ($existingBucket) {
-            if ($existingBucket->getOwner() === $this->getUser()) {
+        try {
+            $createdBucket = $bucketService->createBucket($bucket, $user, '', '', true, true);
+
+            return $responseService->createResponse(
+                [],
+                200,
+                'text/plain',
+                [
+                    'Location' => $this->generateUrl('head_bucket', ['bucket' => $createdBucket->getName()]),
+                    'x-amz-bucket-arn' => $createdBucket->getIdentifier(),
+                ]
+            );
+        } catch (BucketExistsException $e) {
+            if (1 === $e->getCode()) {
                 return $responseService->createErrorResponse(409, 'BucketAlreadyOwnedByYou', 'Bucket already owned by you.');
             } else {
                 return $responseService->createErrorResponse(409, 'BucketAlreadyExists', 'Bucket already exists.');
             }
-        }
-
-        try {
-            $createdBucket = $bucketService->createBucket($bucket, $user, '', '', true, true);
         } catch (\Exception $e) {
             return $responseService->createErrorResponse(500, 'BucketCreationFailed', 'Bucket creation failed.'.$e->getMessage());
         }
-
-        return $responseService->createResponse(
-            [],
-            200,
-            'text/plain',
-            [
-                'Location' => $this->generateUrl('head_bucket', ['bucket' => $createdBucket->getName()]),
-                'x-amz-bucket-arn' => $createdBucket->getIdentifier(),
-            ]
-        );
     }
 }

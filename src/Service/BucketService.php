@@ -8,6 +8,7 @@ use App\Entity\Bucket;
 use App\Entity\File;
 use App\Entity\Filepart;
 use App\Entity\User;
+use App\Exception\Bucket\BucketExistsException;
 use App\Exception\Bucket\BucketNotEmptyException;
 use App\Exception\EmmerRuntimeException;
 use App\Repository\BucketRepository;
@@ -35,6 +36,15 @@ class BucketService
 
     public function createBucket(string $name, User $user, string $description = '', string $path = '', bool $addDefaultPolicies = true, bool $flush = true): Bucket
     {
+        $bucket = $this->getBucket($name);
+        if ($bucket) {
+            if ($bucket->getOwner() === $user) {
+                throw new BucketExistsException('Bucket '.$name.' already exists', 1);
+            } else {
+                throw new BucketExistsException('Bucket '.$name.' already exists', 0);
+            }
+        }
+
         $bucket = new Bucket();
         $bucket->setOwner($user);
         $bucket->setName($name);
@@ -43,6 +53,17 @@ class BucketService
             $bucket->setPath($path);
         } else {
             $bucket->setPath($name);
+        }
+
+        $bucketPath = $this->getAbsoluteBucketPath($bucket);
+        if (is_dir($bucketPath)) {
+            throw new EmmerRuntimeException('Bucket directory already exists');
+        } else {
+            try {
+                mkdir($bucketPath, 0755, true);
+            } catch (\Exception $e) {
+                throw new EmmerRuntimeException('Failed to create bucket directory', 0, $e);
+            }
         }
 
         if ($addDefaultPolicies) {
@@ -54,12 +75,16 @@ class BucketService
             );
         }
 
-        $this->entityManager->persist($bucket);
-        if ($flush) {
-            $this->entityManager->flush();
-        }
+        try {
+            $this->entityManager->persist($bucket);
+            if ($flush) {
+                $this->entityManager->flush();
+            }
 
-        return $bucket;
+            return $bucket;
+        } catch (\Exception $e) {
+            throw new EmmerRuntimeException('Failed to create bucket entity', 0, $e);
+        }
     }
 
     public function deleteBucket(Bucket $bucket, bool $flush = true): void

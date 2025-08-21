@@ -4,6 +4,6 @@ namespace App\Exception\Bucket;
 
 use App\Exception\EmmerLogicException;
 
-class BucketNotEmptyException extends EmmerLogicException
+class BucketExistsException extends EmmerLogicException
 {
 }

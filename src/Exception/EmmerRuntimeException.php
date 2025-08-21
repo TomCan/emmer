@@ -2,6 +2,6 @@
 
 namespace App\Exception;
 
-class EmmerRuntimeException extends EmmerException
+class EmmerRuntimeException extends \RuntimeException
 {
 }
