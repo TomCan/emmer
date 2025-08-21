@@ -125,8 +125,7 @@ class ListObjects extends AbstractController
                 ];
                 if ($fetchOwner) {
                     $item['Owner'] = [
-                        'ID' => 'emmer',
-                        'DisplayName' => 'Emmer',
+                        'ID' => $bucket->getOwner()->getIdentifier(),
                     ];
                 }
                 $data['ListBucketResult']['#Contents'][] = $item;
