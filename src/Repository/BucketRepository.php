@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Bucket;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -16,28 +17,36 @@ class BucketRepository extends ServiceEntityRepository
         parent::__construct($registry, Bucket::class);
     }
 
-    //    /**
-    //     * @return Bucket[] Returns an array of Bucket objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('b')
-    //            ->andWhere('b.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('b.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * @return Bucket[]
+     */
+    public function findPagedByOwnerAndPrefix(User $owner, string $prefix, string $marker = '', int $maxItems = 100): iterable
+    {
+        $qb = $this->createQueryBuilder('b')
+            ->andWhere('b.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->orderBy('b.name', 'ASC');
 
-    //    public function findOneBySomeField($value): ?Bucket
-    //    {
-    //        return $this->createQueryBuilder('b')
-    //            ->andWhere('b.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if ('' !== trim($prefix)) {
+            $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
+            $qb
+                ->andWhere('b.name LIKE :prefix')
+                ->setParameter('prefix', $escapedPrefix.'%');
+        }
+
+        if ($marker) {
+            // treat as marker or continuation-token
+            $qb
+                ->andWhere('b.name >= :marker')
+                ->setParameter('marker', $marker);
+        }
+
+        if ($maxItems > 0) {
+            $qb->setMaxResults($maxItems);
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
 }

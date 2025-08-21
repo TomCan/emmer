@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Domain\List\BucketList;
 use App\Domain\List\ObjectList;
 use App\Entity\Bucket;
 use App\Entity\File;
@@ -88,6 +89,26 @@ class BucketService
     public function getAbsolutePartPath(Filepart $filepart): string
     {
         return $this->getAbsoluteBucketPath($filepart->getFile()->getBucket()).DIRECTORY_SEPARATOR.$filepart->getPath();
+    }
+
+    public function listOwnBuckets(User $owner, string $prefix, string $marker = '', int $maxItems = 100): BucketList
+{
+        $iterator = $this->bucketRepository->findPagedByOwnerAndPrefix($owner, $prefix, $marker, $maxItems + 1);
+
+        // delimiter, return files without delimiter, and group those with delimiter
+        $bucketList = new BucketList();
+        foreach ($iterator as $bucket) {
+            // check if we have reached max-buckets
+            if (count($bucketList->getBuckets()) == $maxItems) {
+                $bucketList->setTruncated(true);
+                $bucketList->setNextMarker($bucket->getName());
+
+                return $bucketList;
+            }
+            $bucketList->addBucket($bucket);
+        }
+
+        return $bucketList;
     }
 
     public function listFiles(Bucket $bucket, string $prefix, string $delimiter = '', string $marker = '', int $markerType = 1, int $maxKeys = 100): ObjectList

@@ -12,7 +12,7 @@ This project is in early development and by no means ready for production use.
 |----------------------|--------|
 | Authentication       | ✅ |
 | Authorization        | ✅ |
-| List buckets         | ❌ |
+| List buckets         | ✅ |
 | Create bucket        | ❌ |
 | Delete bucket        | ❌ |
 | List objects         | ✅ |
