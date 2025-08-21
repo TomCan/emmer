@@ -8,7 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FileRepository::class)]
-#[ORM\UniqueConstraint(name: 'name_idx', columns: ['name'])]
+#[ORM\UniqueConstraint(name: 'bucket_name_version_idx', columns: ['bucket_id', 'name', 'version'])]
 class File
 {
     #[ORM\Id]
@@ -35,6 +35,9 @@ class File
     /** @var Collection<int, Filepart> */
     #[ORM\OneToMany(targetEntity: Filepart::class, mappedBy: 'file', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $fileparts;
+
+    #[ORM\Column]
+    private int $version = 0;
 
     public function __construct()
     {
@@ -130,6 +133,18 @@ class File
                 $filepart->setFile(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    public function setVersion(int $version): static
+    {
+        $this->version = $version;
 
         return $this;
     }
