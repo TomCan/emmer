@@ -14,9 +14,9 @@ class PrincipalService
         $principals = [];
 
         if (null === $user) {
-            $principals[] = 'emr:usr:@anonymous';
+            $principals[] = 'emr:user:@anonymous';
         } else {
-            $principals[] = 'emr:usr:'.$user->getEmail();
+            $principals[] = $user->getIdentifier();
             // add roles, but note ROLE_USER as every user has this role
             foreach ($user->getRoles() as $role) {
                 if ('ROLE_USER' !== $role) {
