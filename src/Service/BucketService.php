@@ -92,7 +92,7 @@ class BucketService
     }
 
     public function listOwnBuckets(User $owner, string $prefix, string $marker = '', int $maxItems = 100): BucketList
-{
+    {
         $iterator = $this->bucketRepository->findPagedByOwnerAndPrefix($owner, $prefix, $marker, $maxItems + 1);
 
         // delimiter, return files without delimiter, and group those with delimiter
