@@ -13,6 +13,7 @@ This project is in early development and by no means ready for production use.
 | Authentication       | ✅ |
 | Authorization        | ✅ |
 | List buckets         | ✅ |
+| Head bucket          | ✅ |
 | Create bucket        | ❌ |
 | Delete bucket        | ❌ |
 | List objects         | ✅ |
