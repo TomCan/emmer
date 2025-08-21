@@ -8,6 +8,8 @@ use App\Entity\Bucket;
 use App\Entity\File;
 use App\Entity\Filepart;
 use App\Entity\User;
+use App\Exception\Bucket\BucketNotEmptyException;
+use App\Exception\EmmerRuntimeException;
 use App\Repository\BucketRepository;
 use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
@@ -60,6 +62,31 @@ class BucketService
         return $bucket;
     }
 
+    public function deleteBucket(Bucket $bucket, bool $flush = true): void
+    {
+        if (!empty($this->listFiles(bucket: $bucket, maxKeys: 1)->getFiles())) {
+            throw new BucketNotEmptyException();
+        }
+
+        $path = $this->getAbsoluteBucketPath($bucket);
+        if (file_exists($path)) {
+            try {
+                rmdir($path);
+            } catch (\Exception $e) {
+                throw new EmmerRuntimeException('Failed to delete bucket directory', 0, $e);
+            }
+        }
+
+        try {
+            $this->entityManager->remove($bucket);
+            if ($flush) {
+                $this->entityManager->flush();
+            }
+        } catch (\Exception $e) {
+            throw new EmmerRuntimeException('Failed to delete bucket entity', 0, $e);
+        }
+    }
+
     public function getUnusedPath(Bucket $bucket): string
     {
         $path = $this->generatorService->generateId(32, GeneratorService::CLASS_LOWER | GeneratorService::CLASS_NUMBER);
@@ -108,7 +135,7 @@ class BucketService
         return $bucketList;
     }
 
-    public function listFiles(Bucket $bucket, string $prefix, string $delimiter = '', string $marker = '', int $markerType = 1, int $maxKeys = 100): ObjectList
+    public function listFiles(Bucket $bucket, string $prefix = '', string $delimiter = '', string $marker = '', int $markerType = 1, int $maxKeys = 100): ObjectList
     {
         if ($delimiter) {
             // we need to group files, request

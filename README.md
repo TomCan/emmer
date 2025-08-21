@@ -8,27 +8,35 @@ environment to simulate S3 locally.
 
 This project is in early development and by no means ready for production use.
 
-| Feature              | Status |
+| Feature             | Status |
 |----------------------|--------|
-| Authentication       | ✅ |
-| Authorization        | ✅ |
-| List buckets         | ✅ |
-| Head bucket          | ✅ |
-| Create bucket        | ✅ |
-| Delete bucket        | ❌ |
-| List objects         | ✅ |
-| Get/Head object      | ✅ |
-| Put object (v1 + v2) | ✅ |
-| Multi-part uploads   | ✅ |
-| Delete object        | ✅ |
-| Delete objects       | ✅ |
-| Versioning           | ❌ |
-| Regions              | ❌ |
-| Signed URLs          | ❌ |
-| Slim controllers     | ❌ |
-| Coding standards     | ✅ |
-| Unit tests           | ✅❌ |
-| Static analyser      | ✅ |
+| Authentication       | ✅      |
+| Authorization        | ✅      |
+| List buckets         | ✅      |
+| Head bucket          | ✅      |
+| Create bucket        | ✅      |
+| Delete bucket        | ✅      |
+| Create bucket policy | ❌      |
+| Get bucket policy    | ❌      |
+| Delete bucket policy | ❌      |
+| List objects         | ✅      |
+| Get/Head object      | ✅      |
+| Put object (v1 + v2) | ✅      |
+| Multi-part uploads   | ✅      |
+| Delete object        | ✅      |
+| Delete objects       | ✅      |
+| Versioning           | ❌      |
+| Regions              | ❌      |
+| Signed URLs          | ❌      |
+
+| Development features | Status |
+|----------------------|--------|
+| Slim controllers     | ❌      |
+| Services             | ✅❌     |
+| Exceptions           | ✅❌     |
+| Coding standards     | ✅      |
+| Unit tests           | ✅❌     |
+| Static analyser      | ✅      |
 
 A checkbox means it has some support, not that it's fully implemented and 100% compatible with every feature of the S3 API.
 
