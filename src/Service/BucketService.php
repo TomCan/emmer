@@ -6,6 +6,7 @@ use App\Domain\List\ObjectList;
 use App\Entity\Bucket;
 use App\Entity\File;
 use App\Entity\Filepart;
+use App\Entity\User;
 use App\Repository\BucketRepository;
 use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
@@ -19,6 +20,7 @@ class BucketService
         private FilepartRepository $filepartRepository,
         private EntityManagerInterface $entityManager,
         private GeneratorService $generatorService,
+        private PolicyService $policyService,
         private string $bucketStoragePath,
     ) {
     }
@@ -26,6 +28,38 @@ class BucketService
     public function getBucket(string $name): ?Bucket
     {
         return $this->bucketRepository->findOneBy(['name' => $name]);
+    }
+
+    public function createBucket(string $name, string $description = '', string $path = '', ?User $user = null, bool $addDefaultPolicies = true, bool $flush = true): Bucket
+    {
+        if (null == $user && $addDefaultPolicies) {
+            throw new \InvalidArgumentException('Cannot add default policies without user');
+        }
+
+        $bucket = new Bucket();
+        $bucket->setName($name);
+        $bucket->setDescription($description);
+        if ($path) {
+            $bucket->setPath($path);
+        } else {
+            $bucket->setPath($name);
+        }
+
+        if ($addDefaultPolicies) {
+            $this->policyService->createPolicy(
+                'Default owner policy',
+                '{"Statement": {"Sid": "BucketOwnerPolicy", "Effect": "Allow", "Principal": ["'.$user->getIdentifier().'"], "Action": ["s3:*"], "Resource": ["'.$bucket->getIdentifier().'", "'.$bucket->getIdentifier().'/*"]}}',
+                null,
+                $bucket,
+            );
+        }
+
+        $this->entityManager->persist($bucket);
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+
+        return $bucket;
     }
 
     public function getUnusedPath(Bucket $bucket): string
