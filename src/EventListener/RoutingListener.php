@@ -5,7 +5,10 @@ namespace App\EventListener;
 use App\Controller\Api\AbortMultipartUpload;
 use App\Controller\Api\CompleteMultipartUpload;
 use App\Controller\Api\CreateMultipartUpload;
+use App\Controller\Api\DeleteBucketPolicy;
 use App\Controller\Api\DeleteObjects;
+use App\Controller\Api\GetBucketPolicy;
+use App\Controller\Api\PutBucketPolicy;
 use App\Controller\Api\UploadPart;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -23,10 +26,34 @@ class RoutingListener implements EventSubscriberInterface
         $requestString = $request->getMethod().' '.$request->getPathInfo();
         $matches = [];
 
+        // match GET /{bucket}
+        if (preg_match('#^GET /([^/]+)/?$#', $requestString, $matches)) {
+            if ($request->query->has('policy')) {
+                $request->attributes->set('_controller', GetBucketPolicy::class.'::getBucketPolicy');
+                $request->attributes->set('bucket', $matches[1]);
+            }
+        }
+
         // match POST /{bucket}
         if (preg_match('#^POST /([^/]+)/?$#', $requestString, $matches)) {
             if ($request->query->has('delete')) {
                 $request->attributes->set('_controller', DeleteObjects::class.'::deleteObjects');
+                $request->attributes->set('bucket', $matches[1]);
+            }
+        }
+
+        // match PUT /{bucket}
+        if (preg_match('#^PUT /([^/]+)/?$#', $requestString, $matches)) {
+            if ($request->query->has('policy')) {
+                $request->attributes->set('_controller', PutBucketPolicy::class.'::putBucketPolicy');
+                $request->attributes->set('bucket', $matches[1]);
+            }
+        }
+
+        // match PUT /{delete}
+        if (preg_match('#^DELETE /([^/]+)/?$#', $requestString, $matches)) {
+            if ($request->query->has('policy')) {
+                $request->attributes->set('_controller', DeleteBucketPolicy::class.'::deleteBucketPolicy');
                 $request->attributes->set('bucket', $matches[1]);
             }
         }

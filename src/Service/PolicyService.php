@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Bucket;
 use App\Entity\Policy;
 use App\Entity\User;
+use App\Exception\Policy\InvalidPolicyException;
 use App\Repository\PolicyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -17,6 +18,14 @@ class PolicyService
     ) {
     }
 
+    public function savePolicy(Policy $policy, bool $flush = false): void
+    {
+        $this->entityManager->persist($policy);
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
+
     public function getPolicy(int $id): ?Policy
     {
         return $this->policyRepository->find($id);
@@ -27,7 +36,7 @@ class PolicyService
         // check if valid policy
         $statements = $this->policyResolver->convertPolicies($policyString);
         if (0 == count($statements)) {
-            throw new \InvalidArgumentException('Policy must contain at least one valid statement');
+            throw new InvalidPolicyException('Policy must contain at least one valid statement');
         }
 
         // new object
@@ -51,6 +60,19 @@ class PolicyService
         }
 
         return $policy;
+    }
+
+    /**
+     * @param array<array{Sid: string, Effect: string, Principal: string[], Action: string[], Resource: string[]}> $statements
+     */
+    public function createPolicyFromStatements(array $statements): Policy
+    {
+        $policyArray = ['Statement' => []];
+        foreach ($statements as $statement) {
+            $policyArray['Statement'][] = array_filter($statement);
+        }
+
+        return $this->createPolicy('policy', json_encode($policyArray, JSON_UNESCAPED_SLASHES), null, null, false);
     }
 
     /**

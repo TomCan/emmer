@@ -16,9 +16,9 @@ This project is in early development and by no means ready for production use.
 | Head bucket          | ✅      |
 | Create bucket        | ✅      |
 | Delete bucket        | ✅      |
-| Create bucket policy | ❌      |
-| Get bucket policy    | ❌      |
-| Delete bucket policy | ❌      |
+| Create bucket policy | ✅      |
+| Get bucket policy    | ✅      |
+| Delete bucket policy | ✅      |
 | List objects         | ✅      |
 | Get/Head object      | ✅      |
 | Put object (v1 + v2) | ✅      |

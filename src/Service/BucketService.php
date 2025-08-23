@@ -7,6 +7,7 @@ use App\Domain\List\ObjectList;
 use App\Entity\Bucket;
 use App\Entity\File;
 use App\Entity\Filepart;
+use App\Entity\Policy;
 use App\Entity\User;
 use App\Exception\Bucket\BucketExistsException;
 use App\Exception\Bucket\BucketNotEmptyException;
@@ -245,6 +246,29 @@ class BucketService
             if (file_exists($path)) {
                 unlink($path);
             }
+        }
+    }
+
+    public function setBucketPolicy(Bucket $bucket, Policy $policy, bool $flush = false): void
+    {
+        // unlink all policies from a bucket and attach passed policy
+        $this->unlinkBucketPolicies($bucket, false);
+        $this->policyService->linkPolicy($policy, $bucket);
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
+
+    public function unlinkBucketPolicies(Bucket $bucket, bool $flush = false): void
+    {
+        // unlink all policies from a bucket
+        foreach ($bucket->getPolicies() as $policy) {
+            $this->policyService->unlinkPolicy($policy, $bucket);
+        }
+
+        if ($flush) {
+            $this->entityManager->flush();
         }
     }
 }
