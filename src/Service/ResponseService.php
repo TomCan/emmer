@@ -50,13 +50,26 @@ class ResponseService
     }
 
     /**
-     * @param mixed[] $data
      * @param mixed[] $headers
      */
-    public function createResponse(array $data, int $status = 200, string $contentType = 'application/xml', array $headers = []): Response
+    public function createResponse(mixed $data, int $status = 200, string $contentType = 'application/xml', array $headers = []): Response
     {
         // generate unique id
         $this->defaultHeaders['x-emmer-id'] = 'emr-'.$this->generatorService->generateId(32);
+        if ('' !== $contentType) {
+            $this->defaultHeaders['Content-Type'] = $contentType;
+        }
+
+        if (is_string($data)) {
+            return new Response(
+                $data,
+                $status,
+                array_merge(
+                    $this->defaultHeaders,
+                    $headers,
+                )
+            );
+        }
 
         if (empty($data)) {
             return new Response(
@@ -64,9 +77,6 @@ class ResponseService
                 $status,
                 array_merge(
                     $this->defaultHeaders,
-                    [
-                        'Content-Type' => $contentType,
-                    ],
                     $headers,
                 )
             );
@@ -77,9 +87,6 @@ class ResponseService
             $status,
             array_merge(
                 $this->defaultHeaders,
-                [
-                    'Content-Type' => $contentType,
-                ],
                 $headers,
             )
         );
