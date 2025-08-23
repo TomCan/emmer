@@ -1,6 +1,7 @@
 {
     "Statement": [
         {
+            "Sid": "IAmRoot",
             "Effect": "Allow",
             "Action": "*",
             "Resource": "*"
