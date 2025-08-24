@@ -18,19 +18,7 @@ class AuthorizationService
      */
     public function requireAll(?User $user, array $rules, mixed ...$policyObjects): void
     {
-        $principals = $this->principalService->getPrincipals($user);
-
-        // make sure user is in $policyObjects is not null
-        if ($user && !in_array($user, $policyObjects)) {
-            $policyObjects[] = $user;
-        }
-        $statements = $this->policyResolver->convertPolicies(...$policyObjects);
-
-        foreach ($rules as $rule) {
-            if (!$this->policyResolver->isCallPermitted($statements, $principals, $rule['action'], $rule['resource'])) {
-                throw new AccessDeniedException();
-            }
-        }
+        $this->require($user, $rules, true, ...$policyObjects);
     }
 
     /**
@@ -38,9 +26,22 @@ class AuthorizationService
      */
     public function requireAny(?User $user, array $rules, mixed ...$policyObjects): void
     {
+        $this->require($user, $rules, false, ...$policyObjects);
+    }
+
+    /**
+     * @param array<array{action: string, resource: string}> $rules
+     */
+    public function require(?User $user, array $rules, bool $all, mixed ...$policyObjects): void
+    {
+        // root user has all permissions and cannot be denied
+        if ($user && $user->hasRole('ROOT')) {
+            return;
+        }
+
         $principals = $this->principalService->getPrincipals($user);
 
-        // make sure user is in $policyObjects is not null
+        // make sure user is in $policyObjects if not null
         if ($user && !in_array($user, $policyObjects)) {
             $policyObjects[] = $user;
         }
@@ -51,6 +52,9 @@ class AuthorizationService
             if ($this->policyResolver->isCallPermitted($statements, $principals, $rule['action'], $rule['resource'])) {
                 $matchedAny = true;
                 break;
+            } elseif ($all) {
+                // need to match all rules
+                throw new AccessDeniedException();
             }
         }
 
