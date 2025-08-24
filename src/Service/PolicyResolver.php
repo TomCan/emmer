@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Bucket;
+use App\Entity\Policy;
 use App\Entity\User;
 
 class PolicyResolver
@@ -55,6 +56,11 @@ class PolicyResolver
                             $convertedPolicies[] = $statement;
                         }
                     }
+                }
+            } elseif ($policyCollection instanceof Policy) {
+                $statements = $this->convertToStatements($policy->getPolicy());
+                if (null !== $statements) {
+                    $convertedPolicies = array_merge($convertedPolicies, $statements);
                 }
             }
         }
