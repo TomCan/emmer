@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\GeneratorService;
+use App\Service\HashService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +18,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class CompleteMultipartUpload extends AbstractController
 {
     // Routing handled by RouteListener
-    public function completeMultipartUpload(AuthorizationService $authorizationService, GeneratorService $generatorService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId): Response
+    public function completeMultipartUpload(AuthorizationService $authorizationService, GeneratorService $generatorService, HashService $hashService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -107,7 +108,7 @@ class CompleteMultipartUpload extends AbstractController
             fclose($outputFile);
 
             $targetFile->setSize(filesize($outputPath));
-            $targetFile->setEtag(md5_file($outputPath));
+            $targetFile->setEtag($hashService->hashFile($targetFile));
             $targetFile->setMtime(new \DateTime());
 
             $targetPart->setSize($targetFile->getSize());

@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\GeneratorService;
+use App\Service\HashService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,7 +19,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class PutObject extends AbstractController
 {
     #[Route('/{bucket}/{key}', name: 'put_object', methods: ['PUT'], requirements: ['key' => '.+'])]
-    public function putObject(AuthorizationService $authorizationService, GeneratorService $generatorService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
+    public function putObject(AuthorizationService $authorizationService, GeneratorService $generatorService, HashService $hashService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -112,7 +113,7 @@ class PutObject extends AbstractController
 
         $file->setMtime(new \DateTime());
         $file->setSize(filesize($path));
-        $file->setEtag(md5_file($path));
+        $file->setEtag($hashService->hashFile($file));
 
         $filePart->setMtime($file->getMtime());
         $filePart->setSize($file->getSize());

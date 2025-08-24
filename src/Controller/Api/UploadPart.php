@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\GeneratorService;
+use App\Service\HashService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,7 +16,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class UploadPart extends AbstractController
 {
-    public function uploadPart(AuthorizationService $authorizationService, GeneratorService $generatorService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId, int $partNumber): Response
+    public function uploadPart(AuthorizationService $authorizationService, GeneratorService $generatorService, HashService $hashService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId, int $partNumber): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -65,7 +66,7 @@ class UploadPart extends AbstractController
             $file->setMtime(new \DateTime());
             $filePart->setMtime($file->getMtime());
             $filePart->setSize($bytesWritten);
-            $filePart->setEtag(md5_file($path));
+            $filePart->setEtag($hashService->hashFilepart($filePart));
 
             $bucketService->saveFile($file);
 
