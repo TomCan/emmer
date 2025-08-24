@@ -30,7 +30,7 @@ class BucketCreateCommand extends Command
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Name of the bucket')
             ->addOption('user', 'u', InputOption::VALUE_REQUIRED, 'User that owns the bucket')
-            ->addOption('no-policies', 'np', InputOption::VALUE_NONE, 'Don\'t create default policies')
+            ->addOption('no-policies', 'np', InputOption::VALUE_NONE, 'Don\'t create default owner policy')
             ->addOption('path', 'p', InputOption::VALUE_REQUIRED, 'Override path of the bucket')
         ;
     }
