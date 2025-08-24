@@ -48,7 +48,7 @@ class PutBucketPolicy extends AbstractController
             $policy = $policyService->createPolicy('bucket policy', $policyString, null, $bucket);
             $bucketService->setBucketPolicy($bucket, $policy, false);
 
-            if ('true' !== (string)$request->headers->get('x-amz-confirm-remove-self-bucket-access', 'false')) {
+            if ('true' !== (string) $request->headers->get('x-amz-confirm-remove-self-bucket-access', 'false')) {
                 // check to see if new policy locked out user
                 try {
                     $authorizationService->requireAll($user, [['action' => 's3:PutBucketPolicy', 'resource' => $bucket->getIdentifier()]], $bucket);
