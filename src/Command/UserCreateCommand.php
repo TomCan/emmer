@@ -9,6 +9,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -29,6 +30,7 @@ class UserCreateCommand extends Command
     {
         $this
             ->addArgument('e-mail', InputArgument::REQUIRED, 'E-mail address of the user')
+            ->addOption('root', 'r', InputOption::VALUE_NONE, 'Create root user with full permissions')
         ;
     }
 
@@ -48,10 +50,17 @@ class UserCreateCommand extends Command
         $user = new User();
         $user->setEmail($email);
         $user->setPassword('');
+
+        if ($input->getOption('root')) {
+            $user->setRoles(['ROOT']);
+        } else {
+            $user->setRoles(['USER']);
+        }
+
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        $io->success('User created. You can set a password with app:user:set-password');
+        $io->success('User created.');
 
         return Command::SUCCESS;
     }
