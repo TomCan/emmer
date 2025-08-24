@@ -6,7 +6,6 @@ use App\Entity\File;
 use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
-use App\Service\GeneratorService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
