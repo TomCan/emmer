@@ -58,7 +58,7 @@ class PolicyResolver
                     }
                 }
             } elseif ($policyCollection instanceof Policy) {
-                $statements = $this->convertToStatements($policy->getPolicy());
+                $statements = $this->convertToStatements($policyCollection->getPolicy());
                 if (null !== $statements) {
                     $convertedPolicies = array_merge($convertedPolicies, $statements);
                 }
