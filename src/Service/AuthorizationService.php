@@ -49,16 +49,19 @@ class AuthorizationService
 
         $matchedAny = false;
         foreach ($rules as $rule) {
-            if ($this->policyResolver->isCallPermitted($statements, $principals, $rule['action'], $rule['resource'])) {
-                $matchedAny = true;
-                break;
-            } elseif ($all) {
-                // need to match all rules
+            $matchedAny = $this->policyResolver->isCallPermitted($statements, $principals, $rule['action'], $rule['resource']);
+            if (!$matchedAny && $all) {
+                // need to match all rules, but didn't
                 throw new AccessDeniedException();
+            } elseif ($matchedAny && !$all) {
+                // need to match any rule, and did
+                break;
             }
+            // else: need to match any rule, but didn't, or need to match all rules, and did so far
         }
 
         if (!$matchedAny) {
+            // need to match any rule, but didn't
             throw new AccessDeniedException();
         }
     }
