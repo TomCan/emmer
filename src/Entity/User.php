@@ -36,6 +36,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Policy::class, mappedBy: 'user')]
     private Collection $policies;
 
+    /**
+     * @var string[]
+     */
     #[ORM\Column(type: Types::SIMPLE_ARRAY)]
     private array $roles = [];
 

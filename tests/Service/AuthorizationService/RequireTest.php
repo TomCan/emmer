@@ -38,7 +38,7 @@ class RequireTest extends TestCase
         );
 
         // we don't actually need to test anything here, as the above call should throw an exception if it fails.
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testAnyNone(): void
@@ -93,7 +93,7 @@ class RequireTest extends TestCase
         );
 
         // we don't actually need to test anything here, as the above call should throw an exception if it fails.
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testAllBoth(): void
@@ -113,7 +113,7 @@ class RequireTest extends TestCase
         );
 
         // we don't actually need to test anything here, as the above call should throw an exception if it fails.
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testAllOne(): void
@@ -169,6 +169,6 @@ class RequireTest extends TestCase
         );
 
         // we don't actually need to test anything here, as the above call should throw an exception if it fails.
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 }
