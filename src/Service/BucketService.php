@@ -26,6 +26,7 @@ class BucketService
         private EntityManagerInterface $entityManager,
         private GeneratorService $generatorService,
         private PolicyService $policyService,
+        private HashService $hashService,
         private string $bucketStoragePath,
     ) {
     }
@@ -270,5 +271,35 @@ class BucketService
         if ($flush) {
             $this->entityManager->flush();
         }
+    }
+
+    /**
+     * @param resource $inputResource
+     */
+    public function createFilePartFromResource(File $file, int $partNumber, mixed $inputResource): Filepart
+    {
+        // multipart upload exists
+        $filePart = new Filepart();
+        $filePart->setPartNumber($partNumber);
+        $filePart->setName($this->generatorService->generateId(32));
+        $filePart->setPath($this->getUnusedPath($file->getBucket()));
+        $file->addFilepart($filePart);
+
+        $outputPath = $this->getAbsolutePartPath($filePart);
+        $basePath = dirname($outputPath);
+        if (!is_dir($basePath)) {
+            mkdir($basePath, 0755, true);
+        }
+
+        $outputFile = fopen($outputPath, 'wb');
+        $bytesWritten = stream_copy_to_stream($inputResource, $outputFile);
+        fclose($outputFile);
+
+        $file->setMtime(new \DateTime());
+        $filePart->setMtime($file->getMtime());
+        $filePart->setSize($bytesWritten);
+        $filePart->setEtag($this->hashService->hashFilepart($filePart));
+
+        return $filePart;
     }
 }

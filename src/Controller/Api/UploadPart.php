@@ -2,12 +2,9 @@
 
 namespace App\Controller\Api;
 
-use App\Entity\Filepart;
 use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
-use App\Service\GeneratorService;
-use App\Service\HashService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,7 +13,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class UploadPart extends AbstractController
 {
-    public function uploadPart(AuthorizationService $authorizationService, GeneratorService $generatorService, HashService $hashService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId, int $partNumber): Response
+    public function uploadPart(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId, int $partNumber): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -44,31 +41,9 @@ class UploadPart extends AbstractController
         // check if key already exists in bucket
         $file = $bucketService->getFile($bucket, '{emmer:mpu:'.$uploadId.'}'.$key);
         if ($file) {
-            // multipart upload exists
-            $filePart = new Filepart();
-            $filePart->setPartNumber($partNumber);
-            $filePart->setName($generatorService->generateId(32));
-            $filePart->setPath($bucketService->getUnusedPath($bucket));
-            $file->addFilepart($filePart);
-
-            $path = $bucketService->getAbsolutePartPath($filePart);
-            $basePath = dirname($path);
-            if (!is_dir($basePath)) {
-                mkdir($basePath, 0755, true);
-            }
-
-            $contentStream = $request->getContent(true);
-            $outputFile = fopen($path, 'wb');
-            $bytesWritten = stream_copy_to_stream($contentStream, $outputFile);
-            fclose($contentStream);
-            fclose($outputFile);
-
-            $file->setMtime(new \DateTime());
-            $filePart->setMtime($file->getMtime());
-            $filePart->setSize($bytesWritten);
-            $filePart->setEtag($hashService->hashFilepart($filePart));
-
-            $bucketService->saveFile($file);
+            // multipart upload exists, create new part from request content
+            $filePart = $bucketService->createFilePartFromResource($file, $partNumber, $request->getContent(true));
+            $bucketService->saveFile($file, true);
 
             return new Response(
                 '',
