@@ -15,7 +15,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class CreateMultipartUpload extends AbstractController
 {
     // Routing handled by RouteListener
-    public function createMultipartUpload(AuthorizationService $authorizationService, GeneratorService $generatorService, ResponseService $responseService, BucketService $bucketService, string $bucket, string $key): Response
+    public function createMultipartUpload(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, string $bucket, string $key): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -37,21 +37,14 @@ class CreateMultipartUpload extends AbstractController
         }
 
         // For now, create a new file with a unique name and handle this on completion
-        $id = $generatorService->generateId(64);
-        $file = new File();
-        $file->setBucket($bucket);
-        $file->setName('{emmer:mpu:'.$id.'}'.$key);
-        $file->setMtime(new \DateTime());
-        $file->setSize(0);
-        $file->setEtag('');
-        $bucketService->saveFile($file);
+        $file = $bucketService->createMultipartUpload($bucket, $key);
 
         return $responseService->createResponse(
             [
                 'InitiateMultipartUploadResult' => [
                     'Bucket' => $bucket->getName(),
                     'Key' => $key,
-                    'UploadId' => $id,
+                    'UploadId' => $file->getEtag(),
                 ],
             ],
         );
