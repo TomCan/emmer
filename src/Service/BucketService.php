@@ -127,7 +127,7 @@ class BucketService
 
     public function getAbsoluteBucketPath(Bucket $bucket): string
     {
-        if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_ends_with($bucket->getPath(), '\\')) {
+        if (preg_match('#^(/|\\\\|[a-zA-Z]+:)#', $bucket->getPath())) {
             // full path
             return $bucket->getPath();
         } else {
