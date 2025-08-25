@@ -48,38 +48,13 @@ class DeleteObject extends AbstractController
                 return $responseService->createPreconditionFailedResponse();
             }
 
-            // get full path to file
-            if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_ends_with($bucket->getPath(), '\\')) {
-                // full path
-                $bucketPath = $bucket->getPath();
-            } else {
-                // relative path from standard storage location
-                $bucketPath = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath();
-            }
+            try {
+                $bucketService->deleteFile($file, true, true);
 
-            $parts = [];
-            foreach ($file->getFileparts() as $filepart) {
-                $parts[$filepart->getPartNumber()] = $bucketPath.DIRECTORY_SEPARATOR.$filepart->getPath();
-            }
-
-            // delete file from database
-            $bucketService->deleteFile($file);
-
-            // delete files from filesystem
-            $failed = false;
-            foreach ($parts as $path) {
-                if (file_exists($path)) {
-                    if (!unlink($path)) {
-                        $failed = true;
-                    }
-                }
-            }
-
-            if ($failed) {
+                return $responseService->createResponse([], 204, '');
+            } catch (\Exception $e) {
                 return $responseService->createErrorResponse(500, 'DeleteFailed', 'Delete Failed');
             }
-
-            return $responseService->createResponse([], 204, 'text/plain', []);
         } else {
             return $responseService->createForbiddenResponse();
         }
