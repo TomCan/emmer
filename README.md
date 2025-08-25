@@ -4,6 +4,9 @@ Emmer is a simple AWS S3 endpoint written in PHP using Symfony as a framework. I
 implementation of the S3 API that can be hosted on a cheap VPS, your typical LAMP shared hosting, or in a development
 environment to simulate S3 locally.
 
+## Documentation
+For installation and usage, please refer to the [docs](docs/index.md).
+
 ## Current state
 
 This project is in early development and by no means ready for production use.
@@ -31,8 +34,8 @@ This project is in early development and by no means ready for production use.
 
 | Project features | Status |
 |------------------|--------|
-| Documentation    | ❌      |
-| Slim controllers | ❌      |
+| Documentation    | ✅❌      |
+| Slim controllers | ✅❌      |
 | Services         | ✅❌     |
 | Exceptions       | ✅❌     |
 | Coding standards | ✅      |
