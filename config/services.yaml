@@ -6,6 +6,7 @@
 parameters:
     bucket_routing_mode: 'path'  # 'host' or 'path'
     bucket_storage_path: '%kernel.project_dir%/var/storage'
+    merge_multipart_uploads: false
 
 services:
     # default configuration for services in *this* file
@@ -14,6 +15,7 @@ services:
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
         bind:
             $bucketStoragePath: '%bucket_storage_path%'
+            $mergeMultipartUploads: '%merge_multipart_uploads%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name

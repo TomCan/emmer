@@ -12,6 +12,7 @@ use App\Entity\User;
 use App\Exception\Bucket\BucketExistsException;
 use App\Exception\Bucket\BucketNotEmptyException;
 use App\Exception\EmmerRuntimeException;
+use App\Exception\Object\InvalidManifestException;
 use App\Repository\BucketRepository;
 use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
@@ -28,6 +29,7 @@ class BucketService
         private PolicyService $policyService,
         private HashService $hashService,
         private string $bucketStoragePath,
+        private bool $mergeMultipartUploads,
     ) {
     }
 
@@ -232,6 +234,18 @@ class BucketService
         }
     }
 
+    public function saveFileAndParts(File $file, bool $flush = false): void
+    {
+        foreach ($file->getFileparts() as $filepart) {
+            $this->entityManager->persist($filepart);
+        }
+        $this->entityManager->persist($file);
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
+
     public function deleteFilepart(Filepart $filepart, bool $deleteFromStorage = true, bool $flush = true): void
     {
         $path = $this->getAbsolutePartPath($filepart);
@@ -318,5 +332,138 @@ class BucketService
         $file->setEtag($id);
 
         return $file;
+    }
+
+    public function completeMultipartUpload(File $file, \SimpleXMLElement $manifest): File
+    {
+        $bucket = $file->getBucket();
+        // remove {emmer:mpu:xxxx} prefix, just find first }
+        $key = substr($file->getName(), strpos((string) $file->getName(), '}') + 1);
+
+        if ('CompleteMultipartUpload' !== $manifest->getName()) {
+            throw new InvalidManifestException('Provided XML is not a valid CreateMultipartUpload manifest', 0);
+        }
+
+        $parts = [];
+        $fileParts = $file->getFileparts()->toArray();
+        ksort($fileParts);
+        foreach ($manifest->Part as $part) {
+            $partNumber = (int) $part->PartNumber;
+            if ($partNumber !== count($parts) + 1) {
+                throw new InvalidManifestException('Invalid part order', 1);
+            }
+            if (!isset($fileParts[$partNumber - 1])) {
+                throw new InvalidManifestException('Part '.$partNumber.' not found', 2);
+            }
+
+            $etag = (string) $part->ETag;
+            if (str_starts_with($etag, '"') && str_ends_with($etag, '"')) {
+                $etag = substr($etag, 1, -1);
+            }
+            if ('' !== $etag && $fileParts[$partNumber - 1]->getEtag() !== $etag) {
+                throw new InvalidManifestException('Part '.$partNumber.' ETag does not match', 3);
+            }
+
+            $parts[] = $fileParts[$partNumber - 1];
+        }
+
+        // we have all parts in the order we need them. We can proceed.
+
+        // Start transaction as we need to flush multiple times due to UnitOfWork order
+        $this->entityManager->beginTransaction();
+
+        // check if this is a new file or existing file
+        $targetFile = $this->getFile($file->getBucket(), $key);
+        if (null == $targetFile) {
+            // new file
+            $targetFile = new File();
+            $targetFile->setBucket($bucket);
+            $targetFile->setName($key);
+            $targetFile->setSize(0);
+            $targetFile->setMtime(new \DateTime());
+            $targetFile->setEtag('');
+            $this->saveFile($targetFile, false);
+        } else {
+            // existing file, delete existing parts
+            foreach ($targetFile->getFileparts() as $part) {
+                // known issue, if anything goes wrong the parts will be left in the database, but not on disk
+                // if we ever support versions, we will fix this by creating a new version and deleting the old one afterwards
+                $this->deleteFilepart($part, true, false);
+            }
+            $targetFile->getFileparts()->clear();
+            // need to save and flush, as otherwise a unique key violation will occur
+            $this->saveFile($targetFile);
+        }
+
+        // flush state of File without any Fileparts
+        $this->entityManager->flush();
+
+        $bucketPath = $this->getAbsoluteBucketPath($bucket);
+        if ($this->mergeMultipartUploads) {
+            // merge parts into single part
+            $targetPart = new Filepart();
+            $targetFile->addFilepart($targetPart);
+            $targetPart->setPartNumber(1);
+            $targetPart->setName($this->generatorService->generateId(32));
+            $targetPart->setPath($this->getUnusedPath($bucket));
+
+            $outputPath = $this->getAbsolutePartPath($targetPart);
+            $outputDir = dirname($outputPath);
+            if (!is_dir($outputDir)) {
+                mkdir($outputDir, 0755, true);
+            }
+
+            $outputFile = fopen($outputPath, 'wb');
+            foreach ($parts as $part) {
+                $partPath = $this->getAbsolutePartPath($part);
+                $partFile = fopen($partPath, 'rb');
+                stream_copy_to_stream($partFile, $outputFile);
+                fclose($partFile);
+            }
+            fclose($outputFile);
+
+            // calculate md5 hash of merged file
+            $targetPart->setEtag($this->hashService->hashFilepart($targetPart, $bucketPath));
+            $targetPart->setSize(filesize($outputPath));
+            $targetPart->setMtime(new \DateTime());
+
+            // use same info for file, no need to recalculate
+            $targetFile->setSize($targetPart->getSize());
+            $targetFile->setEtag($targetPart->getEtag());
+            $targetFile->setMtime($targetPart->getMtime());
+        } else {
+            // keep separate parts. Link them to the target file.
+            foreach ($parts as $part) {
+                $file->removeFilepart($part);
+                $targetFile->addFilepart($part);
+            }
+
+            // calculate md5 hash of the File across all parts
+            $targetFile->setEtag($this->hashService->hashFile($targetFile, $bucketPath));
+            $targetFile->setSize($this->calculateFileSize($targetFile));
+            $targetFile->setMtime(new \DateTime());
+
+            // flush state of the old file without parts and the new file with the parts
+            $this->entityManager->flush();
+        }
+
+        // finally, delete the old file, then save the new one to prevent duplicate keys
+        $this->deleteFile($file, true, true);
+        $this->saveFileAndParts($targetFile, true);
+
+        // should be done, commit transaction
+        $this->entityManager->commit();
+
+        return $targetFile;
+    }
+
+    public function calculateFileSize(File $file): int
+    {
+        $size = 0;
+        foreach ($file->getFileparts() as $filepart) {
+            $size += $filepart->getSize();
+        }
+
+        return $size;
     }
 }
