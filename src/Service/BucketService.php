@@ -17,6 +17,7 @@ use App\Repository\BucketRepository;
 use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class BucketService
 {
@@ -28,6 +29,7 @@ class BucketService
         private GeneratorService $generatorService,
         private PolicyService $policyService,
         private HashService $hashService,
+        private AuthorizationService $authorizationService,
         private string $bucketStoragePath,
         private bool $mergeMultipartUploads,
     ) {
@@ -465,5 +467,130 @@ class BucketService
         }
 
         return $size;
+    }
+
+    /**
+     * @return array{'DeleteResult': mixed[]}
+     */
+    public function deleteObjects(Bucket $bucket, User $user, \SimpleXMLElement $manifest): array
+    {
+        // must be Delete request
+        if ('Delete' !== $manifest->getName()) {
+            throw new InvalidManifestException('Provided XML is not a valid DeleteObjects manifest', 0);
+        }
+
+        if (0 === count($manifest->Object)) {
+            // must have at least one Object
+            throw new InvalidManifestException('Empty DeleteObjects manifest', 1);
+        }
+
+        $objects = [];
+        foreach ($manifest->Object as $object) {
+            $objects[] = (string) $object->Key;
+        }
+
+        $quiet = 'true' === (string) ($manifest->Quiet ?? 'false');
+        $deleted = [];
+        $errors = [];
+        foreach ($manifest->Object as $object) {
+            if (!$object->Key) {
+                throw new InvalidManifestException('Invalid Object in DeleteObjects manifest', 2);
+            }
+
+            // check if user has permissions to delete this object
+            try {
+                $this->authorizationService->requireAll(
+                    $user,
+                    [['action' => 's3:DeleteObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$object->Key]],
+                    $bucket
+                );
+            } catch (AccessDeniedException $e) {
+                $errors[] = [
+                    'Key' => (string) $object->Key,
+                    'Code' => 'AccessDenied',
+                    'Message' => 'Access Denied.',
+                    // VersionId
+                ];
+                continue;
+            }
+
+            $file = $this->getFile($bucket, (string) $object->Key);
+            if (!$file) {
+                $errors[] = [
+                    'Key' => (string) $object->Key,
+                    'Code' => 'NoSuchKey',
+                    'Message' => 'The specified key does not exist.',
+                    // VersionId
+                ];
+                continue;
+            }
+
+            // check if ETag is present and matches
+            if ($object->ETag && $file->getEtag() !== (string) $object->ETag) {
+                $errors[] = [
+                    'Key' => (string) $object->Key,
+                    'Code' => 'ETagMismatch',
+                    'Message' => 'ETag Mismatch',
+                    // VersionId
+                ];
+                continue;
+            }
+
+            // check if LastModifiedTime is present
+            if ($object->LastModifiedTime && $file->getMtime() !== new \DateTime((string) $object->LastModifiedTime)) {
+                $errors[] = [
+                    'Key' => (string) $object->Key,
+                    'Code' => 'LastModifiedTimeMismatch',
+                    'Message' => 'LastModifiedTime Mismatch',
+                    // VersionId
+                ];
+                continue;
+            }
+
+            if ($object->Size && $file->getSize() !== (int) $object->Size) {
+                $errors[] = [
+                    'Key' => (string) $object->Key,
+                    'Code' => 'SizeMismatch',
+                    'Message' => 'Size Mismatch',
+                    // VersionId
+                ];
+                continue;
+            }
+
+            // ready to delete
+            try {
+                $this->deleteFile($file, true, true);
+
+                if (!$quiet) {
+                    $deleted[] = [
+                        'Key' => (string) $object->Key,
+                        'DeleteMarker' => 'false', // unsupported
+                        // VersionId
+                    ];
+                }
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'Key' => (string) $object->Key,
+                    'Code' => 'FilesystemError',
+                    'Message' => 'Filesystem Error',
+                    // VersionId
+                ];
+            }
+        }
+
+        $result = [
+            'DeleteResult' => [
+                '@attributes' => ['xmlns' => 'http://s3.amazonaws.com/doc/2006-03-01/'],
+            ],
+        ];
+
+        if (count($deleted) > 0) {
+            $result['DeleteResult']['#Deleted'] = $deleted;
+        }
+        if (count($errors) > 0) {
+            $result['DeleteResult']['#Error'] = $errors;
+        }
+
+        return $result;
     }
 }

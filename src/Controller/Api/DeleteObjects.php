@@ -9,7 +9,6 @@ use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class DeleteObjects extends AbstractController
 {
@@ -23,147 +22,18 @@ class DeleteObjects extends AbstractController
         /** @var ?User $user */
         $user = $this->getUser();
 
-        if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_starts_with($bucket->getPath(), '\\')) {
-            // full path
-            $bucketPath = $bucket->getPath();
-        } else {
-            // relative path from standard storage location
-            $bucketPath = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath();
-        }
-
         try {
             $deleteRequest = new \SimpleXMLElement($request->getContent());
         } catch (\Exception $e) {
             return $responseService->createErrorResponse(400, 'MalformedXML', 'Malformed XML');
         }
 
-        // must be Delete request
-        if ('Delete' !== $deleteRequest->getName()) {
-            return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request 1');
+        try {
+            $result = $bucketService->deleteObjects($bucket, $user, $deleteRequest);
+
+            return $responseService->createResponse($result);
+        } catch (\Exception $e) {
+            return $responseService->createErrorResponse(400, 'DeleteObjectsFailed', 'DeleteObjects Failed');
         }
-
-        if (0 === count($deleteRequest->Object)) {
-            // must have at least one Object
-            return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request 2');
-        }
-
-        $quiet = 'true' === (string) ($deleteRequest->Quiet ?? 'false');
-        $deleted = [];
-        $errors = [];
-        foreach ($deleteRequest->Object as $object) {
-            if (!$object->Key) {
-                return $responseService->createErrorResponse(400, 'InvalidRequest', 'Invalid Request 3');
-            }
-
-            try {
-                $authorizationService->requireAll(
-                    $user,
-                    [
-                        ['action' => 's3:DeleteObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$object->Key],
-                    ],
-                    $bucket,
-                );
-            } catch (AccessDeniedException $e) {
-                $errors[] = [
-                    'Key' => (string) $object->Key,
-                    'Code' => 'AccessDenied',
-                    'Message' => 'Access Denied.',
-                    // VersionId
-                ];
-                continue;
-            }
-
-            $file = $bucketService->getFile($bucket, (string) $object->Key);
-            if (!$file) {
-                $errors[] = [
-                    'Key' => (string) $object->Key,
-                    'Code' => 'NoSuchKey',
-                    'Message' => 'The specified key does not exist.',
-                    // VersionId
-                ];
-                continue;
-            }
-
-            // check if ETag is present
-            if ($object->ETag && $file->getEtag() !== (string) $object->ETag) {
-                $errors[] = [
-                    'Key' => (string) $object->Key,
-                    'Code' => 'ETagMismatch',
-                    'Message' => 'ETag Mismatch',
-                    // VersionId
-                ];
-                continue;
-            }
-
-            // check if LastModifiedTime is present
-            if ($object->LastModifiedTime && $file->getMtime() !== new \DateTime((string) $object->LastModifiedTime)) {
-                $errors[] = [
-                    'Key' => (string) $object->Key,
-                    'Code' => 'LastModifiedTimeMismatch',
-                    'Message' => 'LastModifiedTime Mismatch',
-                    // VersionId
-                ];
-                continue;
-            }
-
-            if ($object->Size && $file->getSize() !== (int) $object->Size) {
-                $errors[] = [
-                    'Key' => (string) $object->Key,
-                    'Code' => 'SizeMismatch',
-                    'Message' => 'Size Mismatch',
-                    // VersionId
-                ];
-                continue;
-            }
-
-            // ready to delete
-            $parts = [];
-            foreach ($file->getFileparts() as $filepart) {
-                $parts[$filepart->getPartNumber()] = $bucketPath.DIRECTORY_SEPARATOR.$filepart->getPath();
-            }
-
-            // delete file from database
-            $bucketService->deleteFile($file);
-
-            // delete parts from filesystem
-            $failed = false;
-            foreach ($parts as $path) {
-                if (file_exists($path)) {
-                    if (!unlink($path)) {
-                        $failed = true;
-                    }
-                }
-            }
-
-            if ($failed) {
-                $errors[] = [
-                    'Key' => (string) $object->Key,
-                    'Code' => 'FilesystemError',
-                    'Message' => 'Filesystem Error',
-                    // VersionId
-                ];
-            } elseif (!$quiet) {
-                $deleted[] = [
-                    'Key' => (string) $object->Key,
-                    'DeleteMarker' => 'false', // unsupported
-                    // VersionId
-                ];
-            }
-        }
-
-        $result = [
-            'DeleteResult' => [
-                '@attributes' => ['xmlns' => 'http://s3.amazonaws.com/doc/2006-03-01/'],
-            ],
-        ];
-
-        if (count($deleted) > 0) {
-            $result['DeleteResult']['#Deleted'] = $deleted;
-        }
-        if (count($errors) > 0) {
-            $result['DeleteResult']['#Error'] = $errors;
-        }
-
-        return $responseService->createResponse($result);
     }
 }
