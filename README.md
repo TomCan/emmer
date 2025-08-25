@@ -5,7 +5,7 @@ implementation of the S3 API that can be hosted on a cheap VPS, your typical LAM
 environment to simulate S3 locally.
 
 ## Documentation
-For installation and usage, please refer to the [docs](docs/index.md).
+For installation and usage, please refer to the [docs](docs/README.md).
 
 ## Current state
 
