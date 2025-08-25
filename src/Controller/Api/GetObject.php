@@ -100,7 +100,6 @@ class GetObject extends AbstractController
         if ('HEAD' == $request->getMethod()) {
             return $responseService->createResponse([], 200, '', $headers);
         } else {
-            //            var_dump($headers);die();
             return $responseService->createFileStreamResponse($parts, $rangeStart, $rangeEnd, $headers);
         }
     }
