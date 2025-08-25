@@ -2,7 +2,6 @@
 
 namespace App\Controller\Api;
 
-use App\Entity\File;
 use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
@@ -68,15 +67,9 @@ class GetObject extends AbstractController
             }
         }
 
-        if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR)) {
-            $bucketPath = $bucket->getPath();
-        } else {
-            $bucketPath = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath();
-        }
-
         $parts = [];
         foreach ($file->getFileparts() as $filepart) {
-            $parts[$filepart->getPartNumber()] = $bucketPath.DIRECTORY_SEPARATOR.$filepart->getPath();
+            $parts[$filepart->getPartNumber()] = $bucketService->getAbsolutePartPath($filepart);
         }
         ksort($parts);
 
