@@ -40,6 +40,7 @@ class CompleteMultipartUpload extends AbstractController
         }
 
         $file = $bucketService->getFile($bucket, '{emmer:mpu:'.$uploadId.'}'.$key);
+        $bucketPath = $bucketService->getAbsoluteBucketPath($bucket);
         if ($file) {
             try {
                 $completeRequest = new \SimpleXMLElement($request->getContent());
@@ -108,7 +109,7 @@ class CompleteMultipartUpload extends AbstractController
             fclose($outputFile);
 
             $targetFile->setSize(filesize($outputPath));
-            $targetFile->setEtag($hashService->hashFile($targetFile));
+            $targetFile->setEtag($hashService->hashFile($targetFile, $bucketPath));
             $targetFile->setMtime(new \DateTime());
 
             $targetPart->setSize($targetFile->getSize());

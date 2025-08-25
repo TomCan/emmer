@@ -298,7 +298,7 @@ class BucketService
         $file->setMtime(new \DateTime());
         $filePart->setMtime($file->getMtime());
         $filePart->setSize($bytesWritten);
-        $filePart->setEtag($this->hashService->hashFilepart($filePart));
+        $filePart->setEtag($this->hashService->hashFilepart($filePart, $this->getAbsoluteBucketPath($file->getBucket())));
 
         return $filePart;
     }

@@ -93,13 +93,8 @@ class PutObject extends AbstractController
             }
         }
 
-        if (str_starts_with($bucket->getPath(), DIRECTORY_SEPARATOR) || str_ends_with($bucket->getPath(), '\\')) {
-            // full path
-            $path = $bucket->getPath().DIRECTORY_SEPARATOR.$filePart->getPath();
-        } else {
-            // relative path from standard storage location
-            $path = $this->getParameter('bucket_storage_path').DIRECTORY_SEPARATOR.$bucket->getPath().DIRECTORY_SEPARATOR.$filePart->getPath();
-        }
+        $bucketPath = $bucketService->getAbsoluteBucketPath($bucket);
+        $path = $bucketPath.DIRECTORY_SEPARATOR.$filePart->getPath();
         $basePath = dirname($path);
         if (!is_dir($basePath)) {
             mkdir($basePath, 0755, true);
@@ -113,7 +108,7 @@ class PutObject extends AbstractController
 
         $file->setMtime(new \DateTime());
         $file->setSize(filesize($path));
-        $file->setEtag($hashService->hashFile($file));
+        $file->setEtag($hashService->hashFile($file, $bucketPath));
 
         $filePart->setMtime($file->getMtime());
         $filePart->setSize($file->getSize());
