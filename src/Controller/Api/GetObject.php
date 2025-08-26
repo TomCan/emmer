@@ -3,6 +3,8 @@
 namespace App\Controller\Api;
 
 use App\Entity\User;
+use App\Exception\Object\NotModifiedException;
+use App\Exception\Object\PreconditionFailedException;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\RequestService;
@@ -45,11 +47,11 @@ class GetObject extends AbstractController
         }
 
         // Do we need to serve the file?
-        $action = $requestService->evaluateConditionalHeaders($request, $file->getEtag(), $file->getMtime());
-        if (412 === $action) {
+        try {
+            $requestService->evaluateConditionalGetHeaders($request, $file);
+        } catch (PreconditionFailedException $e) {
             return $responseService->createPreconditionFailedResponse();
-        }
-        if (304 === $action) {
+        } catch (NotModifiedException $e) {
             return $responseService->createNotModifiedResponse();
         }
 

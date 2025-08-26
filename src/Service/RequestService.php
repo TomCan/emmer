@@ -2,67 +2,66 @@
 
 namespace App\Service;
 
+use App\Entity\File;
+use App\Exception\Object\NotModifiedException;
 use App\Exception\Object\PreconditionFailedException;
 use Symfony\Component\HttpFoundation\Request;
 
 class RequestService
 {
-    public function evaluateConditionalHeaders(Request $request, string $etagValue, \DateTime $objectTime): int
+    public function evaluateConditionalGetHeaders(Request $request, File $file): void
     {
         // if-match + if-unmodified-since
         if ($request->headers->has('if-match') && $request->headers->has('if-unmodified-since')) {
             // match + not unmodified = serve
-            if ($this->etagHeaderMatches($request->headers->get('if-match'), $etagValue) && ($objectTime < new \DateTime($request->headers->get('if-unmodified-since')))) {
-                return 200;
+            if ($this->etagHeaderMatches($request->headers->get('if-match'), $file->getEtag()) && ($file->getMtime() < new \DateTime($request->headers->get('if-unmodified-since')))) {
+                return;
             }
         }
 
         // if-none-match + if-modified-since
         if ($request->headers->has('if-none-match') && $request->headers->has('if-modified-since')) {
             // !none-match + modified = serve
-            if (!$this->etagHeaderMatches($request->headers->get('if-none-match'), $etagValue) && ($objectTime > new \DateTime($request->headers->get('if-modified-since')))) {
-                return 304;
+            if (!$this->etagHeaderMatches($request->headers->get('if-none-match'), $file->getEtag()) && ($file->getMtime() > new \DateTime($request->headers->get('if-modified-since')))) {
+                throw new NotModifiedException();
             }
         }
 
         // if-match
         if ($request->headers->has('if-match')) {
-            if ($this->etagHeaderMatches($request->headers->get('if-match'), $etagValue)) {
-                return 200;
+            if ($this->etagHeaderMatches($request->headers->get('if-match'), $file->getEtag())) {
+                return;
             } else {
-                return 412;
+                throw new PreconditionFailedException('if-match header doesn\'t match', 412);
             }
         }
 
         // if-none-match
         if ($request->headers->has('if-none-match')) {
-            if ($this->etagHeaderMatches($request->headers->get('if-none-match'), $etagValue)) {
-                return 304;
+            if ($this->etagHeaderMatches($request->headers->get('if-none-match'), $file->getEtag())) {
+                throw new NotModifiedException();
             } else {
-                return 200;
+                return;
             }
         }
 
         // if-modified-since
         if ($request->headers->has('if-modified-since')) {
-            if ($objectTime > new \DateTime($request->headers->get('if-modified-since'))) {
-                return 200;
+            if ($file->getMtime() > new \DateTime($request->headers->get('if-modified-since'))) {
+                return;
             } else {
-                return 304;
+                throw new NotModifiedException();
             }
         }
 
         // if-unmodified-since
         if ($request->headers->has('if-unmodified-since')) {
-            if ($objectTime < new \DateTime($request->headers->get('if-unmodified-since'))) {
-                return 200;
+            if ($file->getMtime() < new \DateTime($request->headers->get('if-unmodified-since'))) {
+                return;
             } else {
-                return 412;
+                throw new PreconditionFailedException('File modified since if-unmodified-since value', 412);
             }
         }
-
-        // no conditional headers
-        return 200;
     }
 
     public function evaluateConditionalPutHeaders(Request $request, ?File $file): void
