@@ -39,6 +39,9 @@ class File
     #[ORM\Column]
     private int $version = 0;
 
+    #[ORM\Column(length: 255)]
+    private ?string $contentType = null;
+
     public function __construct()
     {
         $this->fileparts = new ArrayCollection();
@@ -145,6 +148,18 @@ class File
     public function setVersion(int $version): static
     {
         $this->version = $version;
+
+        return $this;
+    }
+
+    public function getContentType(): ?string
+    {
+        return $this->contentType;
+    }
+
+    public function setContentType(string $contentType): static
+    {
+        $this->contentType = $contentType;
 
         return $this;
     }

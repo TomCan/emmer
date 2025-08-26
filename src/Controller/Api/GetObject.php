@@ -74,12 +74,15 @@ class GetObject extends AbstractController
         ksort($parts);
 
         $headers = [
-            'Content-Type' => 'application/octet-stream',
             'Content-Length' => $file->getSize(),
             'Last-Modified' => $file->getMtime()->format('D, d M Y H:i:s').' GMT',
             'ETag' => '"'.$file->getEtag().'"',
             'Accept-Ranges' => 'bytes',
         ];
+
+        if ($file->getContentType()) {
+            $headers['Content-Type'] = $file->getContentType();
+        }
 
         if (0 !== $rangeStart || $rangeEnd !== $file->getSize() - 1) {
             $headers['Content-Range'] = 'bytes '.$rangeStart.'-'.$rangeEnd.'/'.$file->getSize();
@@ -91,7 +94,7 @@ class GetObject extends AbstractController
         }
 
         if ('HEAD' == $request->getMethod()) {
-            return $responseService->createResponse([], 200, '', $headers);
+            return $responseService->createResponse([], 200, $file->getContentType(), $headers);
         } else {
             return $responseService->createFileStreamResponse($parts, $rangeStart, $rangeEnd, $headers);
         }

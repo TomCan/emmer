@@ -8,13 +8,14 @@ use App\Service\AuthorizationService;
 use App\Service\BucketService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class CreateMultipartUpload extends AbstractController
 {
     // Routing handled by RouteListener
-    public function createMultipartUpload(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, string $bucket, string $key): Response
+    public function createMultipartUpload(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -36,7 +37,7 @@ class CreateMultipartUpload extends AbstractController
         }
 
         // For now, create a new file with a unique name and handle this on completion
-        $file = $bucketService->createMultipartUpload($bucket, $key);
+        $file = $bucketService->createMultipartUpload($bucket, $key, (string) $request->headers->get('content-type', ''));
 
         return $responseService->createResponse(
             [

@@ -319,7 +319,7 @@ class BucketService
         return $filePart;
     }
 
-    public function createMultipartUpload(Bucket $bucket, string $key): File
+    public function createMultipartUpload(Bucket $bucket, string $key, string $contentType = ''): File
     {
         $id = $this->generatorService->generateId(64);
         $file = new File();
@@ -328,6 +328,7 @@ class BucketService
         $file->setMtime(new \DateTime());
         $file->setSize(0);
         $file->setEtag('');
+        $file->setContentType($contentType);
         $this->saveFile($file);
 
         // once saved, abuse the Etag field to store multipart upload id

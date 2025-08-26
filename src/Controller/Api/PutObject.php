@@ -64,6 +64,7 @@ class PutObject extends AbstractController
             $file = new File();
             $file->setBucket($bucket);
             $file->setName($key);
+            $file->setContentType($request->headers->get('content-type', ''));
 
             $filePart = new Filepart();
             $filePart->setPartNumber(1);
