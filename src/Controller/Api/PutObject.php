@@ -63,10 +63,7 @@ class PutObject extends AbstractController
         } else {
             $file = new File($bucket, $key, 0, $request->headers->get('content-type', ''));
 
-            $filePart = new Filepart();
-            $filePart->setPartNumber(1);
-            $filePart->setName($generatorService->generateId(32));
-            $filePart->setPath($bucketService->getUnusedPath($bucket));
+            $filePart = new Filepart($file, 1, $generatorService->generateId(32), $bucketService->getUnusedPath($bucket));
             $file->addFilepart($filePart);
         }
 

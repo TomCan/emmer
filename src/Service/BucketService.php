@@ -295,10 +295,7 @@ class BucketService
     public function createFilePartFromResource(File $file, int $partNumber, mixed $inputResource): Filepart
     {
         // multipart upload exists
-        $filePart = new Filepart();
-        $filePart->setPartNumber($partNumber);
-        $filePart->setName($this->generatorService->generateId(32));
-        $filePart->setPath($this->getUnusedPath($file->getBucket()));
+        $filePart = new Filepart($file, $partNumber, $this->generatorService->generateId(32), $this->getUnusedPath($file->getBucket()));
         $file->addFilepart($filePart);
 
         $outputPath = $this->getAbsolutePartPath($filePart);
@@ -393,11 +390,8 @@ class BucketService
         $bucketPath = $this->getAbsoluteBucketPath($bucket);
         if ($this->mergeMultipartUploads) {
             // merge parts into single part
-            $targetPart = new Filepart();
+            $targetPart = new Filepart($targetFile, 1, $this->generatorService->generateId(32), $this->getUnusedPath($bucket));
             $targetFile->addFilepart($targetPart);
-            $targetPart->setPartNumber(1);
-            $targetPart->setName($this->generatorService->generateId(32));
-            $targetPart->setPath($this->getUnusedPath($bucket));
 
             $outputPath = $this->getAbsolutePartPath($targetPart);
             $outputDir = dirname($outputPath);

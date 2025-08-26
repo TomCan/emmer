@@ -37,6 +37,17 @@ class Filepart
     #[ORM\Column(name: 'partnumber')]
     private ?int $partNumber = null;
 
+    public function __construct(File $file, int $partNumber, string $name, string $path, int $size = 0, \DateTime $mtime = new \DateTime(), string $etag = '')
+    {
+        $this->file = $file;
+        $this->partNumber = $partNumber;
+        $this->name = $name;
+        $this->path = $path;
+        $this->size = $size;
+        $this->mtime = $mtime;
+        $this->etag = $etag;
+    }
+
     public function getId(): ?int
     {
         return $this->id;
