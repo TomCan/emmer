@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Exception\Object\PreconditionFailedException;
 use Symfony\Component\HttpFoundation\Request;
 
 class RequestService
@@ -62,6 +63,28 @@ class RequestService
 
         // no conditional headers
         return 200;
+    }
+
+    public function evaluateConditionalPutHeaders(Request $request, ?File $file): void
+    {
+        // if-match
+        if ($request->headers->has('if-match')) {
+            if ($file) {
+                if (!$this->etagHeaderMatches($request->headers->get('if-match'), $file->getEtag())) {
+                    throw new PreconditionFailedException('if-match header doesn\'t match', 412);
+                }
+            } else {
+                // no file, can't match
+                throw new PreconditionFailedException('if-match header doesn\'t match', 412);
+            }
+        }
+
+        // if-none-match
+        if ($request->headers->has('if-none-match')) {
+            if ($file) {
+                throw new PreconditionFailedException('if-match header doesn\'t match', 412);
+            }
+        }
     }
 
     public function etagHeaderMatches(string $headerValue, string $etagValue): bool
