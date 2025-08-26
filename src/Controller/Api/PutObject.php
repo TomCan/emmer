@@ -7,8 +7,6 @@ use App\Entity\Filepart;
 use App\Entity\User;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
-use App\Service\GeneratorService;
-use App\Service\HashService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,7 +17,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class PutObject extends AbstractController
 {
     #[Route('/{bucket}/{key}', name: 'put_object', methods: ['PUT'], requirements: ['key' => '.+'])]
-    public function putObject(AuthorizationService $authorizationService, GeneratorService $generatorService, HashService $hashService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
+    public function putObject(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -32,7 +30,7 @@ class PutObject extends AbstractController
             $authorizationService->requireAll(
                 $user,
                 [
-                    ['action' => 's3:PutObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$key],
+                    ['action' => 's3:PutObject', 'resource' => $bucket->getIdentifier().'/'.$key],
                 ],
                 $bucket,
             );
@@ -42,6 +40,7 @@ class PutObject extends AbstractController
 
         // check if key already exists in bucket
         $file = $bucketService->getFile($bucket, $key);
+
         if ($file) {
             // existing file
             if ('*' === $request->headers->get('if-none-match', '')) {
@@ -49,67 +48,39 @@ class PutObject extends AbstractController
                 return new Response('Precondition Failed', 412, ['X-Message' => 'Key already exists in bucket']);
             }
 
-            // get first filepart, which isn't guaranteed to be the first in the collection
-            $filePart = null;
-            foreach ($file->getFileparts() as $part) {
-                if (1 === $part->getPartNumber()) {
-                    $filePart = $file->getFileparts()[0];
-                    break;
+            if ('' !== $request->headers->get('if-match', '')) {
+                $etags = explode(',', $request->headers->get('if-match', ''));
+                $matches = false;
+                foreach ($etags as $etag) {
+                    $etag = trim($etag);
+                    if (str_starts_with($etag, '"') && str_ends_with($etag, '"')) {
+                        // stip quotes
+                        $etag = substr($etag, 1, -1);
+                    }
+                    if ('*' == $etag || $etag === $file->getEtag()) {
+                        $matches = true;
+                        break;
+                    }
+                }
+
+                if (!$matches) {
+                    return new Response('Precondition Failed', 412, ['X-Message' => 'Etag does not match']);
                 }
             }
-            // force single part
+
+            // delete current parts
             $file->getFileparts()->clear();
-            $file->addFilepart($filePart);
+            // create new filepart for $file from request content
+            $filepart = $bucketService->createFilePartFromResource($file, 1, $request->getContent(true));
         } else {
-            $file = new File($bucket, $key, 0, $request->headers->get('content-type', ''));
-
-            $filePart = new Filepart($file, 1, $generatorService->generateId(32), $bucketService->getUnusedPath($bucket));
-            $file->addFilepart($filePart);
-        }
-
-        // check if-match header
-        if ('' !== $request->headers->get('if-match', '')) {
-            $etags = explode(',', $request->headers->get('if-match', ''));
-            $matches = false;
-            foreach ($etags as $etag) {
-                $etag = trim($etag);
-                if (str_starts_with($etag, '"') && str_ends_with($etag, '"')) {
-                    // stip quotes
-                    $etag = substr($etag, 1, -1);
-                }
-                if ('*' == $etag || $etag === $file->getEtag()) {
-                    $matches = true;
-                    break;
-                }
+            if ('' !== $request->headers->get('if-match', '')) {
+                return new Response('Precondition Failed', 412, ['X-Message' => 'ETag does not match']);
             }
 
-            if (!$matches) {
-                return new Response('Precondition Failed', 412, ['X-Message' => 'Etag does not match']);
-            }
+            // create new file and filepart from request content
+            $file = $bucketService->createFileAndFilepartFromResource($bucket, $key, 0, $request->headers->get('content-type', ''), $request->getContent(true));
         }
-
-        $bucketPath = $bucketService->getAbsoluteBucketPath($bucket);
-        $path = $bucketPath.DIRECTORY_SEPARATOR.$filePart->getPath();
-        $basePath = dirname($path);
-        if (!is_dir($basePath)) {
-            mkdir($basePath, 0755, true);
-        }
-
-        $contentStream = $request->getContent(true);
-        $outputFile = fopen($path, 'wb');
-        $bytesWritten = stream_copy_to_stream($contentStream, $outputFile);
-        fclose($contentStream);
-        fclose($outputFile);
-
-        $file->setMtime(new \DateTime());
-        $file->setSize(filesize($path));
-        $file->setEtag($hashService->hashFile($file, $bucketPath));
-
-        $filePart->setMtime($file->getMtime());
-        $filePart->setSize($file->getSize());
-        $filePart->setEtag($file->getEtag());
-
-        $bucketService->saveFile($file);
+        $bucketService->saveFileAndParts($file);
 
         return new Response(
             '',

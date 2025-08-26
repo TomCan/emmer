@@ -292,6 +292,21 @@ class BucketService
     /**
      * @param resource $inputResource
      */
+    public function createFileAndFilepartFromResource(Bucket $bucket, string $key, int $version, string $contentType, mixed $inputResource): File
+    {
+        $file = new File($bucket, $key, 0, $contentType);
+        $filepart = $this->createFilePartFromResource($file, 1, $inputResource);
+
+        $file->setMtime($filepart->getMtime());
+        $file->setSize($filepart->getSize());
+        $file->setEtag($filepart->getEtag());
+
+        return $file;
+    }
+
+    /**
+     * @param resource $inputResource
+     */
     public function createFilePartFromResource(File $file, int $partNumber, mixed $inputResource): Filepart
     {
         // multipart upload exists
