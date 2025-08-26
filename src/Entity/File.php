@@ -42,9 +42,17 @@ class File
     #[ORM\Column(length: 255)]
     private ?string $contentType = null;
 
-    public function __construct()
+    public function __construct(Bucket $bucket, string $name, int $version = 0, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
     {
         $this->fileparts = new ArrayCollection();
+
+        $this->bucket = $bucket;
+        $this->name = $name;
+        $this->version = $version;
+        $this->contentType = $contentType;
+        $this->size = $size;
+        $this->mtime = $mtime;
+        $this->etag = $etag;
     }
 
     public function getId(): ?int

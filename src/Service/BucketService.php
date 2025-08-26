@@ -322,13 +322,7 @@ class BucketService
     public function createMultipartUpload(Bucket $bucket, string $key, string $contentType = ''): File
     {
         $id = $this->generatorService->generateId(64);
-        $file = new File();
-        $file->setBucket($bucket);
-        $file->setName('{emmer:mpu:'.$id.'}'.$key);
-        $file->setMtime(new \DateTime());
-        $file->setSize(0);
-        $file->setEtag('');
-        $file->setContentType($contentType);
+        $file = new File($bucket, $key, 0, $contentType);
         $this->saveFile($file);
 
         // once saved, abuse the Etag field to store multipart upload id
@@ -379,12 +373,7 @@ class BucketService
         $targetFile = $this->getFile($file->getBucket(), $key);
         if (null == $targetFile) {
             // new file
-            $targetFile = new File();
-            $targetFile->setBucket($bucket);
-            $targetFile->setName($key);
-            $targetFile->setSize(0);
-            $targetFile->setMtime(new \DateTime());
-            $targetFile->setEtag('');
+            $targetFile = new File($bucket, $key, 0, $file->getContentType());
             $this->saveFile($targetFile, false);
         } else {
             // existing file, delete existing parts
