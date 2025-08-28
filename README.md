@@ -11,33 +11,37 @@ For installation and usage, please refer to the [docs](docs/README.md).
 
 This project is in early development and by no means ready for production use.
 
-| Feature             | Status |
-|----------------------|--------|
-| Authentication       | ✅      |
-| Authorization        | ✅      |
-| List buckets         | ✅      |
-| Head bucket          | ✅      |
-| Create bucket        | ✅      |
-| Delete bucket        | ✅      |
-| Create bucket policy | ✅      |
-| Get bucket policy    | ✅      |
-| Delete bucket policy | ✅      |
-| List objects         | ✅      |
-| Get/Head object      | ✅      |
-| Put object (v1 + v2) | ✅      |
-| Multi-part uploads   | ✅      |
-| Delete object        | ✅      |
-| Delete objects       | ✅      |
-| Versioning           | ❌      |
-| Regions              | ❌      |
-| Signed URLs          | ❌      |
+| Feature                | Status |
+|------------------------|--------|
+| Authentication         | ✅      |
+| Authorization          | ✅      |
+| List buckets           | ✅      |
+| Head bucket            | ✅      |
+| Create bucket          | ✅      |
+| Delete bucket          | ✅      |
+| Create bucket policy   | ✅      |
+| Get bucket policy      | ✅      |
+| Delete bucket policy   | ✅      |
+| List objects           | ✅      |
+| Get/Head object        | ✅      |
+| Put object (v1 + v2)   | ✅      |
+| Multi-part uploads     | ✅      |
+| Delete object          | ✅      |
+| Delete objects         | ✅      |
+| Versioning             | ✅❌ WIP |
+| List object versions   | ❌      |
+| Get buckets versioning | ❌      |
+| Put buckets versioning | ❌      |
+| Delete markers         | ❌      |
+| Regions                | ❌      |
+| Signed URLs            | ❌      |
 
 | Project features | Status |
 |------------------|--------|
 | Documentation    | ✅❌      |
-| Slim controllers | ✅❌      |
-| Services         | ✅❌     |
-| Exceptions       | ✅❌     |
+| Slim controllers | ✅      |
+| Services         | ✅     |
+| Exceptions       | ✅     |
 | Coding standards | ✅      |
 | Unit tests       | ✅❌     |
 | Static analyser  | ✅      |
