@@ -174,7 +174,7 @@ class AwsSignatureV4Validator
         string $contentSha256,
     ): string {
         $method = strtoupper($request->getMethod());
-        $path = $this->getCanonicalUri($request);
+        $path = $request->getPathInfo();
         $queryString = $this->getCanonicalQueryString($request);
         $headers = $this->getCanonicalHeaders($request, $signedHeaders);
 
@@ -188,22 +188,6 @@ class AwsSignatureV4Validator
         ]);
 
         return hash('sha256', $canonicalRequest);
-    }
-
-    /**
-     * Get canonical URI.
-     */
-    private function getCanonicalUri(Request $request): string
-    {
-        $path = $request->getPathInfo();
-
-        // Encode each path segment
-        $segments = explode('/', $path);
-        $encodedSegments = array_map(function ($segment) {
-            return rawurlencode($segment);
-        }, $segments);
-
-        return implode('/', $encodedSegments);
     }
 
     /**
