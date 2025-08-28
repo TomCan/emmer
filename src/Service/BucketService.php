@@ -187,7 +187,12 @@ class BucketService
 
     public function getFile(Bucket $bucket, string $name): ?File
     {
-        return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name]);
+        return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'currentVersion' => true], ['mtime' => 'DESC', 'id' => 'DESC']);
+    }
+
+    public function getFileMpu(Bucket $bucket, string $name, string $uploadId): ?File
+    {
+        return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => '{emr:mpu:'.$uploadId.'}'.$name, 'currentVersion' => false]);
     }
 
     public function saveFile(File $file, bool $flush = true): void
@@ -295,7 +300,7 @@ class BucketService
     public function createMultipartUpload(Bucket $bucket, string $key, string $contentType = ''): File
     {
         $id = $this->generatorService->generateId(64);
-        $file = new File($bucket, $key, 0, $contentType);
+        $file = new File($bucket, '{emr:mpu:'.$id.'}'.$key, null, $contentType);
         $this->saveFile($file);
 
         // once saved, abuse the Etag field to store multipart upload id
@@ -307,7 +312,7 @@ class BucketService
     public function completeMultipartUpload(File $file, \SimpleXMLElement $manifest): File
     {
         $bucket = $file->getBucket();
-        // remove {emmer:mpu:xxxx} prefix, just find first }
+        // remove {emr:mpu:xxxx} prefix, just find first }
         $key = substr($file->getName(), strpos((string) $file->getName(), '}') + 1);
 
         if ('CompleteMultipartUpload' !== $manifest->getName()) {

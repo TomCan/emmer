@@ -6,8 +6,6 @@ use App\Entity\User;
 use App\Exception\Object\InvalidManifestException;
 use App\Service\AuthorizationService;
 use App\Service\BucketService;
-use App\Service\GeneratorService;
-use App\Service\HashService;
 use App\Service\ResponseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +36,7 @@ class CompleteMultipartUpload extends AbstractController
             return $responseService->createForbiddenResponse();
         }
 
-        $file = $bucketService->getFile($bucket, '{emmer:mpu:'.$uploadId.'}'.$key);
+        $file = $bucketService->getFileMpu($bucket, $key, $uploadId);
         if ($file) {
             try {
                 $completeRequest = new \SimpleXMLElement($request->getContent());

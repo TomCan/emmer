@@ -39,7 +39,7 @@ class UploadPart extends AbstractController
         }
 
         // check if key already exists in bucket
-        $file = $bucketService->getFile($bucket, '{emmer:mpu:'.$uploadId.'}'.$key);
+        $file = $bucketService->getFileMpu($bucket, $key, $uploadId);
         if ($file) {
             // multipart upload exists, create new part from request content
             $filePart = $bucketService->createFilePartFromResource($file, $partNumber, $request->getContent(true));
