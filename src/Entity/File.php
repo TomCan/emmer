@@ -45,7 +45,7 @@ class File
     #[ORM\Column(length: 255)]
     private ?string $contentType = null;
 
-    public function __construct(Bucket $bucket, string $name, string $version = null, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
+    public function __construct(Bucket $bucket, string $name, ?string $version = null, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
     {
         $this->fileparts = new ArrayCollection();
 

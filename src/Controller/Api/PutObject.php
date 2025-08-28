@@ -50,23 +50,21 @@ class PutObject extends AbstractController
             return $responseService->createPreconditionFailedResponse();
         }
 
-        if ($file) {
-            // delete current parts
-            $file->getFileparts()->clear();
-            // create new filepart for $file from request content
-            $filepart = $bucketService->createFilePartFromResource($file, 1, $request->getContent(true));
-        } else {
-            // create new file and filepart from request content
-            $file = $bucketService->createFileAndFilepartFromResource($bucket, $key, 0, $request->headers->get('content-type', ''), $request->getContent(true));
-        }
-        $bucketService->saveFileAndParts($file);
+        // create new file and filepart from request content
+        $newFile = $bucketService->createFileAndFilepartFromResource($bucket, $key, $request->headers->get('content-type', ''), $request->getContent(true));
+        $bucketService->saveFileAndParts($newFile);
+        $bucketService->makeVersionActive($newFile, $file, true);
 
-        return new Response(
+        $headers = ['ETag' => $file->getEtag()];
+        if ($file->getVersion()) {
+            $headers['x-amz-version-id'] = $file->getVersion();
+        }
+
+        return $responseService->createResponse(
+            [],
+            204,
             '',
-            200,
-            [
-                'ETag' => $file->getEtag(),
-            ]
+            $headers,
         );
     }
 }

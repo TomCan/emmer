@@ -61,7 +61,7 @@ class CompleteMultipartUpload extends AbstractController
             } catch (InvalidManifestException $e) {
                 return $responseService->createErrorResponse(400, 'InvalidManifest', 'Invalid Manifest ('.(string) $e->getCode().')');
             } catch (\Exception $e) {
-                return $responseService->createErrorResponse(500, 'CompleteMultipartUploadFailed', 'Complete Multipart Upload Failed');
+                return $responseService->createErrorResponse(500, 'CompleteMultipartUploadFailed', 'Complete Multipart Upload Failed'.$e->getMessage());
             }
         } else {
             return $responseService->createErrorResponse(

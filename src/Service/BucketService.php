@@ -227,6 +227,33 @@ class BucketService
         }
     }
 
+    /**
+     * Make a new version of a file active.
+     *
+     * If the bucket is not versioned, the old file will be deleted.
+     * If the bucket is versioned, the old file will be kept as an inactive version.
+     */
+    public function makeVersionActive(File $newFile, ?File $oldFile, bool $flush = true): void
+    {
+        $newFile->setCurrentVersion(true);
+        $this->entityManager->persist($newFile);
+
+        if ($oldFile) {
+            if ($oldFile->getBucket()->isVersioned()) {
+                // versioned bucket, make old version inactive
+                $oldFile->setCurrentVersion(false);
+                $this->entityManager->persist($oldFile);
+            } else {
+                // unversioned bucket, delete old version
+                $this->deleteFile($oldFile, true, false);
+            }
+        }
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
+
     public function deleteFilepart(Filepart $filepart, bool $deleteFromStorage = true, bool $flush = true): void
     {
         $this->entityManager->remove($filepart);
@@ -263,12 +290,23 @@ class BucketService
         }
     }
 
+    public function createFile(Bucket $bucket, string $key, string $contentType = ''): File
+    {
+        if ($bucket->isVersioned()) {
+            $version = $this->generatorService->generateId(32);
+        } else {
+            $version = null;
+        }
+
+        return new File($bucket, $key, $version, $contentType);
+    }
+
     /**
      * @param resource $inputResource
      */
     public function createFileAndFilepartFromResource(Bucket $bucket, string $key, string $contentType, mixed $inputResource): File
     {
-        $file = new File($bucket, $key, 0, $contentType);
+        $file = $this->createFile($bucket, $key, $contentType);
         $filepart = $this->createFilePartFromResource($file, 1, $inputResource);
 
         $file->setMtime($filepart->getMtime());
@@ -347,27 +385,13 @@ class BucketService
         // Start transaction as we need to flush multiple times due to UnitOfWork order
         $this->entityManager->beginTransaction();
 
-        // check if this is a new file or existing file
-        $targetFile = $this->getFile($file->getBucket(), $key);
-        if (null == $targetFile) {
-            // new file
-            $targetFile = new File($bucket, $key, 0, $file->getContentType());
-            $this->saveFile($targetFile, false);
-        } else {
-            // existing file, delete existing parts
-            foreach ($targetFile->getFileparts() as $part) {
-                // known issue, if anything goes wrong the parts will be left in the database, but not on disk
-                // if we ever support versions, we will fix this by creating a new version and deleting the old one afterwards
-                $this->deleteFilepart($part, true, false);
-            }
-            $targetFile->getFileparts()->clear();
-            // need to save and flush, as otherwise a unique key violation will occur
-            $this->saveFile($targetFile);
-        }
+        // always create a new File object
+        $targetFile = $this->createFile($file->getBucket(), $key, $file->getContentType());
+        $this->saveFile($targetFile, true);
 
         $bucketPath = $this->filesystemService->getBucketPath($bucket);
         if ($this->mergeMultipartUploads) {
-            // merge parts into single part
+            // create receiving Filepart
             $targetPart = new Filepart($targetFile, 1, $this->generatorService->generateId(32), $this->getUnusedPath($bucket));
             $targetFile->addFilepart($targetPart);
 
@@ -399,9 +423,13 @@ class BucketService
             $this->entityManager->flush();
         }
 
-        // finally, delete the old file, then save the new one to prevent duplicate keys
+        // Now delete the old MPU file and then save the new one. Flush to prevent duplicate keys
         $this->deleteFile($file, true, true);
         $this->saveFileAndParts($targetFile, true);
+
+        // finally, activate the new file and deactive the old one (if any)
+        $oldFile = $this->getFile($bucket, $key);
+        $this->makeVersionActive($targetFile, $oldFile, true);
 
         // should be done, commit transaction
         $this->entityManager->commit();
