@@ -17,7 +17,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class CompleteMultipartUpload extends AbstractController
 {
     // Routing handled by RouteListener
-    public function completeMultipartUpload(AuthorizationService $authorizationService, GeneratorService $generatorService, HashService $hashService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId): Response
+    public function completeMultipartUpload(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, Request $request, string $bucket, string $key, string $uploadId): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -39,7 +39,6 @@ class CompleteMultipartUpload extends AbstractController
         }
 
         $file = $bucketService->getFile($bucket, '{emmer:mpu:'.$uploadId.'}'.$key);
-        $bucketPath = $bucketService->getAbsoluteBucketPath($bucket);
         if ($file) {
             try {
                 $completeRequest = new \SimpleXMLElement($request->getContent());

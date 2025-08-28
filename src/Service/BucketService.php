@@ -17,6 +17,7 @@ use App\Repository\BucketRepository;
 use App\Repository\FilepartRepository;
 use App\Repository\FileRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class BucketService
@@ -26,11 +27,11 @@ class BucketService
         private FileRepository $fileRepository,
         private FilepartRepository $filepartRepository,
         private EntityManagerInterface $entityManager,
+        private FilesystemService $filesystemService,
         private GeneratorService $generatorService,
         private PolicyService $policyService,
         private HashService $hashService,
         private AuthorizationService $authorizationService,
-        private string $bucketStoragePath,
         private bool $mergeMultipartUploads,
     ) {
     }
@@ -61,16 +62,7 @@ class BucketService
             $bucket->setPath($name);
         }
 
-        $bucketPath = $this->getAbsoluteBucketPath($bucket);
-        if (is_dir($bucketPath)) {
-            throw new EmmerRuntimeException('Bucket directory already exists');
-        } else {
-            try {
-                mkdir($bucketPath, 0755, true);
-            } catch (\Exception $e) {
-                throw new EmmerRuntimeException('Failed to create bucket directory', 0, $e);
-            }
-        }
+        $this->filesystemService->createBucketPath($bucket);
 
         if ($addDefaultPolicies) {
             $this->policyService->createPolicy(
@@ -99,14 +91,7 @@ class BucketService
             throw new BucketNotEmptyException();
         }
 
-        $path = $this->getAbsoluteBucketPath($bucket);
-        if (file_exists($path)) {
-            try {
-                rmdir($path);
-            } catch (\Exception $e) {
-                throw new EmmerRuntimeException('Failed to delete bucket directory', 0, $e);
-            }
-        }
+        $this->filesystemService->deleteBucketPath($bucket);
 
         try {
             $this->entityManager->remove($bucket);
@@ -130,20 +115,9 @@ class BucketService
         return $path;
     }
 
-    public function getAbsoluteBucketPath(Bucket $bucket): string
-    {
-        if (preg_match('#^(/|\\\\|[a-zA-Z]+:)#', $bucket->getPath())) {
-            // full path
-            return $bucket->getPath();
-        } else {
-            // relative path from standard storage location
-            return $this->bucketStoragePath.DIRECTORY_SEPARATOR.$bucket->getPath();
-        }
-    }
-
     public function getAbsolutePartPath(Filepart $filepart): string
     {
-        return $this->getAbsoluteBucketPath($filepart->getFile()->getBucket()).DIRECTORY_SEPARATOR.$filepart->getPath();
+        return $this->filesystemService->getBucketPath($filepart->getFile()->getBucket()).DIRECTORY_SEPARATOR.$filepart->getPath();
     }
 
     public function listOwnBuckets(User $owner, string $prefix, string $marker = '', int $maxItems = 100): BucketList
@@ -250,9 +224,6 @@ class BucketService
 
     public function deleteFilepart(Filepart $filepart, bool $deleteFromStorage = true, bool $flush = true): void
     {
-        $path = $this->getAbsolutePartPath($filepart);
-
-        $filepart->setFile(null);
         $this->entityManager->remove($filepart);
 
         if ($flush) {
@@ -260,9 +231,7 @@ class BucketService
         }
 
         if ($deleteFromStorage) {
-            if (file_exists($path)) {
-                unlink($path);
-            }
+            $this->filesystemService->deleteFilepart($filepart);
         }
     }
 
@@ -292,7 +261,7 @@ class BucketService
     /**
      * @param resource $inputResource
      */
-    public function createFileAndFilepartFromResource(Bucket $bucket, string $key, int $version, string $contentType, mixed $inputResource): File
+    public function createFileAndFilepartFromResource(Bucket $bucket, string $key, string $contentType, mixed $inputResource): File
     {
         $file = new File($bucket, $key, 0, $contentType);
         $filepart = $this->createFilePartFromResource($file, 1, $inputResource);
@@ -305,7 +274,7 @@ class BucketService
     }
 
     /**
-     * @param resource $inputResource
+     * @param resource|Request|string $inputResource
      */
     public function createFilePartFromResource(File $file, int $partNumber, mixed $inputResource): Filepart
     {
@@ -313,20 +282,12 @@ class BucketService
         $filePart = new Filepart($file, $partNumber, $this->generatorService->generateId(32), $this->getUnusedPath($file->getBucket()));
         $file->addFilepart($filePart);
 
-        $outputPath = $this->getAbsolutePartPath($filePart);
-        $basePath = dirname($outputPath);
-        if (!is_dir($basePath)) {
-            mkdir($basePath, 0755, true);
-        }
-
-        $outputFile = fopen($outputPath, 'wb');
-        $bytesWritten = stream_copy_to_stream($inputResource, $outputFile);
-        fclose($outputFile);
+        $bytesWritten = $this->filesystemService->writeFilepart($filePart, $inputResource);
 
         $file->setMtime(new \DateTime());
         $filePart->setMtime($file->getMtime());
         $filePart->setSize($bytesWritten);
-        $filePart->setEtag($this->hashService->hashFilepart($filePart, $this->getAbsoluteBucketPath($file->getBucket())));
+        $filePart->setEtag($this->hashService->hashFilepart($filePart, $this->filesystemService->getBucketPath($file->getBucket())));
 
         return $filePart;
     }
@@ -399,37 +360,22 @@ class BucketService
             $this->saveFile($targetFile);
         }
 
-        // flush state of File without any Fileparts
-        $this->entityManager->flush();
-
-        $bucketPath = $this->getAbsoluteBucketPath($bucket);
+        $bucketPath = $this->filesystemService->getBucketPath($bucket);
         if ($this->mergeMultipartUploads) {
             // merge parts into single part
             $targetPart = new Filepart($targetFile, 1, $this->generatorService->generateId(32), $this->getUnusedPath($bucket));
             $targetFile->addFilepart($targetPart);
 
-            $outputPath = $this->getAbsolutePartPath($targetPart);
-            $outputDir = dirname($outputPath);
-            if (!is_dir($outputDir)) {
-                mkdir($outputDir, 0755, true);
-            }
-
-            $outputFile = fopen($outputPath, 'wb');
-            foreach ($parts as $part) {
-                $partPath = $this->getAbsolutePartPath($part);
-                $partFile = fopen($partPath, 'rb');
-                stream_copy_to_stream($partFile, $outputFile);
-                fclose($partFile);
-            }
-            fclose($outputFile);
+            // Merge all parts into one part
+            $bytesWritten = $this->filesystemService->mergeFileparts($file, $targetPart);
 
             // calculate md5 hash of merged file
             $targetPart->setEtag($this->hashService->hashFilepart($targetPart, $bucketPath));
-            $targetPart->setSize(filesize($outputPath));
+            $targetPart->setSize($bytesWritten);
             $targetPart->setMtime(new \DateTime());
 
             // use same info for file, no need to recalculate
-            $targetFile->setSize($targetPart->getSize());
+            $targetPart->setSize($bytesWritten);
             $targetFile->setEtag($targetPart->getEtag());
             $targetFile->setMtime($targetPart->getMtime());
         } else {
