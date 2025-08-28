@@ -8,7 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FileRepository::class)]
-#[ORM\UniqueConstraint(name: 'bucket_name_version_idx', columns: ['bucket_id', 'name', 'version'])]
+#[ORM\Index(name: 'bucket_name_version_idx', columns: ['bucket_id', 'name', 'version'])]
 class File
 {
     #[ORM\Id]
@@ -36,13 +36,16 @@ class File
     #[ORM\OneToMany(targetEntity: Filepart::class, mappedBy: 'file', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $fileparts;
 
+    #[ORM\Column(nullable: true)]
+    private ?string $version = null;
+
     #[ORM\Column]
-    private int $version = 0;
+    private bool $currentVersion = false;
 
     #[ORM\Column(length: 255)]
     private ?string $contentType = null;
 
-    public function __construct(Bucket $bucket, string $name, int $version = 0, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
+    public function __construct(Bucket $bucket, string $name, string $version = null, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
     {
         $this->fileparts = new ArrayCollection();
 
@@ -148,16 +151,26 @@ class File
         return $this;
     }
 
-    public function getVersion(): int
+    public function getVersion(): ?string
     {
         return $this->version;
     }
 
-    public function setVersion(int $version): static
+    public function setVersion(?string $version): static
     {
         $this->version = $version;
 
         return $this;
+    }
+
+    public function isCurrentVersion(): bool
+    {
+        return $this->currentVersion;
+    }
+
+    public function setCurrentVersion(bool $currentVersion): void
+    {
+        $this->currentVersion = $currentVersion;
     }
 
     public function getContentType(): ?string

@@ -38,6 +38,9 @@ class Bucket
     #[ORM\Column]
     private ?\DateTime $ctime = null;
 
+    #[ORM\Column]
+    private bool $versioned = false;
+
     public function __construct()
     {
         $this->policies = new ArrayCollection();
@@ -147,5 +150,15 @@ class Bucket
         $this->ctime = $ctime;
 
         return $this;
+    }
+
+    public function isVersioned(): bool
+    {
+        return $this->versioned;
+    }
+
+    public function setVersioned(bool $versioned): void
+    {
+        $this->versioned = $versioned;
     }
 }
