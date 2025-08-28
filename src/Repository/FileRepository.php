@@ -25,6 +25,7 @@ class FileRepository extends ServiceEntityRepository
         $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
 
         $qb = $this->createQueryBuilder('f')
+            ->andWhere('f.currentVersion = 1')
             ->andWhere('f.bucket = :bucket')
             ->andWhere('f.name LIKE :prefix')
             ->setParameter('bucket', $bucket)
