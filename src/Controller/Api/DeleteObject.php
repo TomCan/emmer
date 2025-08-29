@@ -23,7 +23,10 @@ class DeleteObject extends AbstractController
             return $responseService->createForbiddenResponse();
         }
 
-        $versionId = $request->query->get('versionId', '');
+        /*
+         * There's a difference between not passing a versionId and passing a versionId of null.
+         */
+        $versionId = $request->query->getString('versionId', '');
         if ('null' == $versionId) {
             $versionId = null;
         }

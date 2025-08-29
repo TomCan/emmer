@@ -25,13 +25,29 @@ class GetObject extends AbstractController
             return $responseService->createForbiddenResponse();
         }
 
+        /*
+         * There's a difference between not passing a versionId and passing a versionId of null.
+         */
+        $versionId = $request->query->getString('versionId', '');
+        if ('null' == $versionId) {
+            $versionId = null;
+        }
+
+        if ('' !== $versionId) {
+            // dealing with specific version requires a different action
+            $requiredAction = 's3:GetObjectVersion';
+        } else {
+            // use current version
+            $requiredAction = 's3:GetObject';
+        }
+
         /** @var ?User $user */
         $user = $this->getUser();
         try {
             $authorizationService->requireAll(
                 $user,
                 [
-                    ['action' => 's3:GetObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$key],
+                    ['action' => $requiredAction, 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$key],
                 ],
                 $bucket,
             );
@@ -40,10 +56,20 @@ class GetObject extends AbstractController
         }
 
         // check if key exists in bucket
-        $file = $bucketService->getFile($bucket, $key);
+        $file = $bucketService->getFile($bucket, $key, $versionId);
         if (!$file) {
             // API states it returns 404 but in reality it returns 403 forbidden
             return $responseService->createForbiddenResponse();
+        } elseif ($file->isDeleteMarker()) {
+            return $responseService->createResponse(
+                [],
+                404,
+                'text/html',
+                [
+                    'x-amz-delete-marker' => 'true',
+                    'x-amz-version-id' => $file->getVersion(),
+                ]
+            );
         }
 
         // Do we need to serve the file?
@@ -84,6 +110,10 @@ class GetObject extends AbstractController
 
         if ($file->getContentType()) {
             $headers['Content-Type'] = $file->getContentType();
+        }
+
+        if ('' !== $versionId) {
+            $headers['x-amz-version-id'] = $file->getVersion() ?? 'null';
         }
 
         if (0 !== $rangeStart || $rangeEnd !== $file->getSize() - 1) {
