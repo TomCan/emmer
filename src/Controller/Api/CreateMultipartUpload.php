@@ -44,7 +44,7 @@ class CreateMultipartUpload extends AbstractController
                 'InitiateMultipartUploadResult' => [
                     'Bucket' => $bucket->getName(),
                     'Key' => $key,
-                    'UploadId' => $file->getEtag(),
+                    'UploadId' => $file->getMultipartUploadId(),
                 ],
             ],
         );

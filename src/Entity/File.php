@@ -45,6 +45,9 @@ class File
     #[ORM\Column(length: 255)]
     private ?string $contentType = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?string $multipartUploadId = null;
+
     public function __construct(Bucket $bucket, string $name, ?string $version = null, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
     {
         $this->fileparts = new ArrayCollection();
@@ -181,6 +184,19 @@ class File
     public function setContentType(string $contentType): static
     {
         $this->contentType = $contentType;
+
+        return $this;
+    }
+
+    public function getMultipartUploadId(): ?string
+    {
+        return $this->multipartUploadId;
+    }
+
+    public function setMultipartUploadId(?string $multipartUploadId): void
+    {
+        $this->multipartUploadId = $multipartUploadId;
+    }
 
         return $this;
     }

@@ -192,7 +192,7 @@ class BucketService
 
     public function getFileMpu(Bucket $bucket, string $name, string $uploadId): ?File
     {
-        return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => '{emr:mpu:'.$uploadId.'}'.$name, 'currentVersion' => false]);
+        return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'multipartUploadId' => $uploadId]);
     }
 
     public function saveFile(File $file, bool $flush = true): void
@@ -338,7 +338,8 @@ class BucketService
     public function createMultipartUpload(Bucket $bucket, string $key, string $contentType = ''): File
     {
         $id = $this->generatorService->generateId(64);
-        $file = new File($bucket, '{emr:mpu:'.$id.'}'.$key, null, $contentType);
+        $file = new File($bucket, $key, null, $contentType);
+        $file->setMultipartUploadId($id);
         $this->saveFile($file);
 
         // once saved, abuse the Etag field to store multipart upload id
@@ -350,8 +351,6 @@ class BucketService
     public function completeMultipartUpload(File $file, \SimpleXMLElement $manifest): File
     {
         $bucket = $file->getBucket();
-        // remove {emr:mpu:xxxx} prefix, just find first }
-        $key = substr($file->getName(), strpos((string) $file->getName(), '}') + 1);
 
         if ('CompleteMultipartUpload' !== $manifest->getName()) {
             throw new InvalidManifestException('Provided XML is not a valid CreateMultipartUpload manifest', 0);
@@ -386,7 +385,7 @@ class BucketService
         $this->entityManager->beginTransaction();
 
         // always create a new File object
-        $targetFile = $this->createFile($file->getBucket(), $key, $file->getContentType());
+        $targetFile = $this->createFile($file->getBucket(), $file->getName(), $file->getContentType());
         $this->saveFile($targetFile, true);
 
         $bucketPath = $this->filesystemService->getBucketPath($bucket);
@@ -428,7 +427,7 @@ class BucketService
         $this->saveFileAndParts($targetFile, true);
 
         // finally, activate the new file and deactive the old one (if any)
-        $oldFile = $this->getFile($bucket, $key);
+        $oldFile = $this->getFile($bucket, $file->getName());
         $this->makeVersionActive($targetFile, $oldFile, true);
 
         // should be done, commit transaction
