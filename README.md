@@ -28,11 +28,11 @@ This project is in early development and by no means ready for production use.
 | Multi-part uploads     | ✅      |
 | Delete object          | ✅      |
 | Delete objects         | ✅      |
-| Versioning             | ✅❌ WIP |
-| List object versions   | ❌      |
+| Versioning             | ✅      |
+| List object versions   | ✅      |
 | Get buckets versioning | ❌      |
 | Put buckets versioning | ❌      |
-| Delete markers         | ❌      |
+| Delete markers         | ✅      |
 | Regions                | ❌      |
 | Signed URLs            | ❌      |
 
