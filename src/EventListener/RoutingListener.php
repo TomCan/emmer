@@ -8,6 +8,7 @@ use App\Controller\Api\CreateMultipartUpload;
 use App\Controller\Api\DeleteBucketPolicy;
 use App\Controller\Api\DeleteObjects;
 use App\Controller\Api\GetBucketPolicy;
+use App\Controller\Api\ListObjectVersions;
 use App\Controller\Api\PutBucketPolicy;
 use App\Controller\Api\UploadPart;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -30,6 +31,9 @@ class RoutingListener implements EventSubscriberInterface
         if (preg_match('#^GET /([^/]+)/?$#', $requestString, $matches)) {
             if ($request->query->has('policy')) {
                 $request->attributes->set('_controller', GetBucketPolicy::class.'::getBucketPolicy');
+                $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('versions')) {
+                $request->attributes->set('_controller', ListObjectVersions::class.'::listObjectVersions');
                 $request->attributes->set('bucket', $matches[1]);
             }
         }

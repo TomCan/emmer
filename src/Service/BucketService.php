@@ -185,6 +185,52 @@ class BucketService
         return $objectList;
     }
 
+    public function listFileVersions(Bucket $bucket, string $prefix = '', string $delimiter = '', string $keyMarker = '', string $versionMarker = '', int $maxKeys = 100): ObjectList
+    {
+        if ($delimiter) {
+            // we need to group files
+            $iterator = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, $prefix, $keyMarker, $versionMarker, 0);
+        } else {
+            $iterator = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, $prefix, $keyMarker, $versionMarker, $maxKeys + 1);
+        }
+
+        // delimiter, return files without delimiter, and group those with delimiter
+        $objectList = new ObjectList();
+        foreach ($iterator as $file) {
+            // check if we have reached max-keys
+            if (count($objectList->getFiles()) + count($objectList->getCommonPrefixes()) == $maxKeys) {
+                $objectList->setTruncated(true);
+                $objectList->setNextMarker($file->getName());
+                $objectList->setNextVersionMarker($file->getVersion() ?? 'null');
+
+                return $objectList;
+            }
+
+            if ($delimiter) {
+                $fileName = $file->getName();
+                if ('' !== $prefix) {
+                    // remove prefix from file name
+                    $fileName = substr($fileName, strlen($prefix));
+                }
+                if (str_contains($fileName, $delimiter)) {
+                    // include prefix and delimiter in commonPrefix name
+                    $commonPrefix = $prefix.substr($fileName, 0, strrpos($fileName, $delimiter) + strlen($delimiter));
+                    if (!$objectList->hasCommonPrefix($commonPrefix)) {
+                        $objectList->addCommonPrefix($commonPrefix);
+                    }
+                } else {
+                    // non-delimited file
+                    $objectList->addFile($file);
+                }
+            } else {
+                // no delimiter
+                $objectList->addFile($file);
+            }
+        }
+
+        return $objectList;
+    }
+
     public function getFile(Bucket $bucket, string $name, ?string $versionId = ''): ?File
     {
         if ('' === $versionId) {
@@ -587,7 +633,6 @@ class BucketService
                             'VersionId' => $file->getVersion() ?? 'null',
                         ];
                     }
-
                 } else {
                     $this->deleteFileVersion($file, true, true);
 

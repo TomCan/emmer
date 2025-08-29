@@ -233,7 +233,18 @@ class ResponseService
                     $useKey = substr($key, 1);
                     foreach ($value as $item) {
                         if (is_array($item)) {
-                            $this->arrayToXml([$useKey => $item], null, $xml);
+                            if ('' === $useKey) {
+                                // get key name from @name attribute
+                                if ($item['@name']) {
+                                    $useKey2 = $item['@name'];
+                                    unset($item['@name']);
+                                } else {
+                                    $useKey2 = 'item';
+                                }
+                                $this->arrayToXml([$useKey2 => $item], null, $xml);
+                            } else {
+                                $this->arrayToXml([$useKey => $item], null, $xml);
+                            }
                         } else {
                             $child = $xml->addChild($useKey, htmlspecialchars($item));
                         }

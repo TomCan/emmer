@@ -54,4 +54,51 @@ class FileRepository extends ServiceEntityRepository
             ->getQuery()
             ->toIterable();
     }
+
+    /**
+     * @return File[]
+     */
+    public function findVersionsPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $keyMarker = '', string $versionMarker = '', int $maxKeys = 100): iterable
+    {
+        $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
+
+        $qb = $this->createQueryBuilder('f')
+            ->andWhere('f.bucket = :bucket')
+            ->andWhere('f.name LIKE :prefix')
+            ->setParameter('bucket', $bucket)
+            ->setParameter('prefix', $escapedPrefix.'%')
+            ->orderBy('f.name', 'ASC')
+            ->addOrderBy('f.id', 'DESC')
+        ;
+
+        if ($keyMarker && $versionMarker) {
+            $expr = $qb->expr();
+            $qb
+                ->andWhere(
+                    $expr->orX(
+                        $expr->andX(
+                            $expr->eq('f.name', ':name'),
+                            $expr->gte('f.version', ':version')
+                        ),
+                        $expr->gt('f.name', ':name')
+                    )
+                )
+                ->setParameter('name', $keyMarker)
+                ->setParameter('version', $versionMarker)
+            ;
+        } elseif ($keyMarker) {
+            $qb
+                ->andWhere('f.name >= :name')
+                ->setParameter('name', $keyMarker)
+            ;
+        }
+
+        if ($maxKeys > 0) {
+            $qb->setMaxResults($maxKeys);
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
 }
