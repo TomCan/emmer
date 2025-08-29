@@ -37,7 +37,7 @@ class AbortMultipartUpload extends AbstractController
         $headers = [];
         $file = $bucketService->getFileMpu($bucket, $key, $uploadId);
         if ($file) {
-            $bucketService->deleteFile($file, true, true);
+            $bucketService->deleteFileVersion($file, true, true);
 
             return $responseService->createResponse(
                 [],

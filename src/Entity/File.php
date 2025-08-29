@@ -48,6 +48,9 @@ class File
     #[ORM\Column(nullable: true)]
     private ?string $multipartUploadId = null;
 
+    #[ORM\Column]
+    private bool $deleteMarker = false;
+
     public function __construct(Bucket $bucket, string $name, ?string $version = null, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
     {
         $this->fileparts = new ArrayCollection();
@@ -197,6 +200,15 @@ class File
     {
         $this->multipartUploadId = $multipartUploadId;
     }
+
+    public function isDeleteMarker(): bool
+    {
+        return $this->deleteMarker;
+    }
+
+    public function setDeleteMarker(bool $deleteMarker): static
+    {
+        $this->deleteMarker = $deleteMarker;
 
         return $this;
     }

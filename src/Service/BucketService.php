@@ -185,9 +185,15 @@ class BucketService
         return $objectList;
     }
 
-    public function getFile(Bucket $bucket, string $name): ?File
+    public function getFile(Bucket $bucket, string $name, ?string $versionId = ''): ?File
     {
-        return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'currentVersion' => true], ['mtime' => 'DESC', 'id' => 'DESC']);
+        if ('' === $versionId) {
+            // return current version
+            return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'currentVersion' => true, 'multipartUploadId' => null], ['mtime' => 'DESC', 'id' => 'DESC']);
+        } else {
+            // return specific version
+            return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'versionId' => $versionId, 'multipartUploadId' => null]);
+        }
     }
 
     public function getFileMpu(Bucket $bucket, string $name, string $uploadId): ?File
@@ -203,13 +209,38 @@ class BucketService
         }
     }
 
-    public function deleteFile(File $file, bool $deleteFromStorage = true, bool $flush = true): void
+    public function deleteFile(File $file, bool $deleteFromStorage = true, bool $flush = true): ?File
     {
+        if ($file->getBucket()->isVersioned()) {
+            // versioned bucket, insert delete marker instead of deleting file
+            $deleteMarker = $this->createFile($file->getBucket(), $file->getName(), $file->getContentType());
+            $deleteMarker->setDeleteMarker(true);
+            $this->entityManager->persist($deleteMarker);
+
+            // make deletemarker active version
+            $this->makeVersionActive($deleteMarker, $file, false);
+
+            if ($flush) {
+                $this->entityManager->flush();
+            }
+
+            return $deleteMarker;
+        } else {
+            // non-versioned bucket, actually delete this file "version"
+            $this->deleteFileVersion($file, $deleteFromStorage, $flush);
+
+            return $file;
+        }
+    }
+
+    public function deleteFileVersion(File $file, bool $deleteFromStorage = true, bool $flush = true): void
+    {
+        // delete File and Fileparts
         foreach ($file->getFileparts() as $filepart) {
             $this->deleteFilepart($filepart, $deleteFromStorage, false);
         }
-
         $this->entityManager->remove($file);
+
         if ($flush) {
             $this->entityManager->flush();
         }
@@ -245,7 +276,7 @@ class BucketService
                 $this->entityManager->persist($oldFile);
             } else {
                 // unversioned bucket, delete old version
-                $this->deleteFile($oldFile, true, false);
+                $this->deleteFileVersion($oldFile, true, false);
             }
         }
 
@@ -342,9 +373,6 @@ class BucketService
         $file->setMultipartUploadId($id);
         $this->saveFile($file);
 
-        // once saved, abuse the Etag field to store multipart upload id
-        $file->setEtag($id);
-
         return $file;
     }
 
@@ -423,7 +451,7 @@ class BucketService
         }
 
         // Now delete the old MPU file and then save the new one. Flush to prevent duplicate keys
-        $this->deleteFile($file, true, true);
+        $this->deleteFileVersion($file, true, true);
         $this->saveFileAndParts($targetFile, true);
 
         // finally, activate the new file and deactive the old one (if any)
@@ -474,30 +502,42 @@ class BucketService
                 throw new InvalidManifestException('Invalid Object in DeleteObjects manifest', 2);
             }
 
+            $key = (string) $object->Key;
+            if ('' == ($object->VersionId ?? '')) {
+                $versionId = '';
+                $requiredAction = 's3:DeleteObject';
+            } elseif ('null' == (string) $object->VersionId) {
+                $versionId = null;
+                $requiredAction = 's3:DeleteObjectVersion';
+            } else {
+                $versionId = (string) $object->VersionId;
+                $requiredAction = 's3:DeleteObjectVersion';
+            }
+
             // check if user has permissions to delete this object
             try {
                 $this->authorizationService->requireAll(
                     $user,
-                    [['action' => 's3:DeleteObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$object->Key]],
+                    [['action' => $requiredAction, 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$key]],
                     $bucket
                 );
             } catch (AccessDeniedException $e) {
                 $errors[] = [
-                    'Key' => (string) $object->Key,
+                    'Key' => $key,
                     'Code' => 'AccessDenied',
                     'Message' => 'Access Denied.',
-                    // VersionId
+                    'VersionId' => $versionId ?? 'null',
                 ];
                 continue;
             }
 
-            $file = $this->getFile($bucket, (string) $object->Key);
+            $file = $this->getFile($bucket, (string) $object->Key, $versionId);
             if (!$file) {
                 $errors[] = [
                     'Key' => (string) $object->Key,
                     'Code' => 'NoSuchKey',
                     'Message' => 'The specified key does not exist.',
-                    // VersionId
+                    'VersionId' => $versionId ?? 'null',
                 ];
                 continue;
             }
@@ -508,7 +548,7 @@ class BucketService
                     'Key' => (string) $object->Key,
                     'Code' => 'ETagMismatch',
                     'Message' => 'ETag Mismatch',
-                    // VersionId
+                    'VersionId' => $versionId ?? 'null',
                 ];
                 continue;
             }
@@ -519,7 +559,7 @@ class BucketService
                     'Key' => (string) $object->Key,
                     'Code' => 'LastModifiedTimeMismatch',
                     'Message' => 'LastModifiedTime Mismatch',
-                    // VersionId
+                    'VersionId' => $versionId ?? 'null',
                 ];
                 continue;
             }
@@ -529,28 +569,42 @@ class BucketService
                     'Key' => (string) $object->Key,
                     'Code' => 'SizeMismatch',
                     'Message' => 'Size Mismatch',
-                    // VersionId
+                    'VersionId' => $versionId ?? 'null',
                 ];
                 continue;
             }
 
             // ready to delete
             try {
-                $this->deleteFile($file, true, true);
+                if ('' === $versionId) {
+                    $deletedFile = $this->deleteFile($file, true, true);
 
-                if (!$quiet) {
-                    $deleted[] = [
-                        'Key' => (string) $object->Key,
-                        'DeleteMarker' => 'false', // unsupported
-                        // VersionId
-                    ];
+                    if (!$quiet) {
+                        $deleted[] = [
+                            'Key' => (string) $object->Key,
+                            'DeleteMarker' => $deletedFile->isDeleteMarker() ? 'true' : 'false',
+                            'DeleteMarkerVersionId' => $deletedFile->getVersion() ?? 'null',
+                            'VersionId' => $file->getVersion() ?? 'null',
+                        ];
+                    }
+
+                } else {
+                    $this->deleteFileVersion($file, true, true);
+
+                    if (!$quiet) {
+                        $deleted[] = [
+                            'Key' => (string) $object->Key,
+                            'DeleteMarker' => $file->isDeleteMarker() ? 'true' : 'false',
+                            'VersionId' => $file->getVersion() ?? 'null',
+                        ];
+                    }
                 }
             } catch (\Exception $e) {
                 $errors[] = [
                     'Key' => (string) $object->Key,
                     'Code' => 'FilesystemError',
                     'Message' => 'Filesystem Error',
-                    // VersionId
+                    'VersionId' => $file->getVersion() ?? 'null',
                 ];
             }
         }

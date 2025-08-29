@@ -23,13 +23,26 @@ class DeleteObject extends AbstractController
             return $responseService->createForbiddenResponse();
         }
 
+        $versionId = $request->query->get('versionId', '');
+        if ('null' == $versionId) {
+            $versionId = null;
+        }
+
+        if ('' !== $versionId) {
+            // deleting a specific version requires a different action, even when deleting null version on non-versioned bucket
+            $requiredAction = 's3:DeleteObjectVersion';
+        } else {
+            // regular delete
+            $requiredAction = 's3:DeleteObject';
+        }
+
         /** @var ?User $user */
         $user = $this->getUser();
         try {
             $authorizationService->requireAll(
                 $user,
                 [
-                    ['action' => 's3:DeleteObject', 'resource' => 'emr:bucket:'.$bucket->getName().'/'.$key],
+                    ['action' => $requiredAction, 'resource' => $bucket->getIdentifier().'/'.$key],
                 ],
                 $bucket,
             );
@@ -38,8 +51,9 @@ class DeleteObject extends AbstractController
         }
 
         // check if key already exists in bucket
-        $file = $bucketService->getFile($bucket, $key);
-        if ($file) {
+        $file = $bucketService->getFile($bucket, $key, $versionId);
+        // file must exists, and must not be a delete marker unless versionId is specified
+        if ($file && (!$file->isDeleteMarker() || '' !== $versionId)) {
             // existing file
             if (
                 $request->headers->has('if-match')
@@ -49,9 +63,29 @@ class DeleteObject extends AbstractController
             }
 
             try {
-                $bucketService->deleteFile($file, true, true);
+                if ('' === $versionId) {
+                    // delete file (result depends on bucket versioning setting)
+                    $deletedFile = $bucketService->deleteFile($file, true, true);
 
-                return $responseService->createResponse([], 204, '');
+                    if ($deletedFile->isDeleteMarker()) {
+                        return $responseService->createResponse([], 204, '', [
+                            'x-amz-delete-marker' => 'true',
+                            'x-amz-version-id' => $deletedFile->getVersion(),
+                        ]);
+                    } else {
+                        return $responseService->createResponse([], 204, '', [
+                            'x-amz-delete-marker' => 'false',
+                        ]);
+                    }
+                } else {
+                    // delete specific file version or delete marker
+                    $bucketService->deleteFileVersion($file, true, true);
+
+                    // x-amz-delete-marker is true if the file was a delete marker BEFORE deleting
+                    return $responseService->createResponse([], 204, '', [
+                        'x-amz-delete-marker' => $file->isDeleteMarker() ? 'true' : 'false',
+                    ]);
+                }
             } catch (\Exception $e) {
                 return $responseService->createErrorResponse(500, 'DeleteFailed', 'Delete Failed');
             }
