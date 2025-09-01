@@ -140,15 +140,11 @@ class BucketService
         return $bucketList;
     }
 
-    public function listFiles(Bucket $bucket, string $prefix = '', string $delimiter = '', string $marker = '', int $markerType = 1, int $maxKeys = 100): ObjectList
+    /**
+     * @param File[] $iterator
+     */
+    private function createObjectListFromIterator(mixed $iterator, string $prefix, string $delimiter, int $maxKeys): ObjectList
     {
-        if ($delimiter) {
-            // we need to group files, request
-            $iterator = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, $prefix, $marker, 0, $markerType);
-        } else {
-            $iterator = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, $prefix, $marker, $maxKeys + 1, $markerType);
-        }
-
         // delimiter, return files without delimiter, and group those with delimiter
         $objectList = new ObjectList();
         foreach ($iterator as $file) {
@@ -183,6 +179,18 @@ class BucketService
         }
 
         return $objectList;
+    }
+
+    public function listFiles(Bucket $bucket, string $prefix = '', string $delimiter = '', string $marker = '', int $markerType = 1, int $maxKeys = 100): ObjectList
+    {
+        if ($delimiter) {
+            // we need to group files, request
+            $iterator = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, $prefix, $marker, 0, $markerType);
+        } else {
+            $iterator = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, $prefix, $marker, $maxKeys + 1, $markerType);
+        }
+
+        return $this->createObjectListFromIterator($iterator, $prefix, $delimiter, $maxKeys);
     }
 
     public function listFileVersions(Bucket $bucket, string $prefix = '', string $delimiter = '', string $keyMarker = '', string $versionMarker = '', int $maxKeys = 100): ObjectList
@@ -194,41 +202,7 @@ class BucketService
             $iterator = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, $prefix, $keyMarker, $versionMarker, $maxKeys + 1);
         }
 
-        // delimiter, return files without delimiter, and group those with delimiter
-        $objectList = new ObjectList();
-        foreach ($iterator as $file) {
-            // check if we have reached max-keys
-            if (count($objectList->getFiles()) + count($objectList->getCommonPrefixes()) == $maxKeys) {
-                $objectList->setTruncated(true);
-                $objectList->setNextMarker($file->getName());
-                $objectList->setNextMarker2($file->getVersion() ?? 'null');
-
-                return $objectList;
-            }
-
-            if ($delimiter) {
-                $fileName = $file->getName();
-                if ('' !== $prefix) {
-                    // remove prefix from file name
-                    $fileName = substr($fileName, strlen($prefix));
-                }
-                if (str_contains($fileName, $delimiter)) {
-                    // include prefix and delimiter in commonPrefix name
-                    $commonPrefix = $prefix.substr($fileName, 0, strrpos($fileName, $delimiter) + strlen($delimiter));
-                    if (!$objectList->hasCommonPrefix($commonPrefix)) {
-                        $objectList->addCommonPrefix($commonPrefix);
-                    }
-                } else {
-                    // non-delimited file
-                    $objectList->addFile($file);
-                }
-            } else {
-                // no delimiter
-                $objectList->addFile($file);
-            }
-        }
-
-        return $objectList;
+        return $this->createObjectListFromIterator($iterator, $prefix, $delimiter, $maxKeys);
     }
 
     public function listMultipartUploads(Bucket $bucket, string $prefix = '', string $delimiter = '', string $keyMarker = '', string $uploadIdMarker = '', int $maxKeys = 100): ObjectList
@@ -240,41 +214,7 @@ class BucketService
             $iterator = $this->fileRepository->findMpuPagedByBucketAndPrefix($bucket, $prefix, $keyMarker, $uploadIdMarker, $maxKeys + 1);
         }
 
-        // delimiter, return files without delimiter, and group those with delimiter
-        $objectList = new ObjectList();
-        foreach ($iterator as $file) {
-            // check if we have reached max-keys
-            if (count($objectList->getFiles()) + count($objectList->getCommonPrefixes()) == $maxKeys) {
-                $objectList->setTruncated(true);
-                $objectList->setNextMarker($file->getName());
-                $objectList->setNextMarker2($file->getMultipartUploadId() ?? 'null');
-
-                return $objectList;
-            }
-
-            if ($delimiter) {
-                $fileName = $file->getName();
-                if ('' !== $prefix) {
-                    // remove prefix from file name
-                    $fileName = substr($fileName, strlen($prefix));
-                }
-                if (str_contains($fileName, $delimiter)) {
-                    // include prefix and delimiter in commonPrefix name
-                    $commonPrefix = $prefix.substr($fileName, 0, strrpos($fileName, $delimiter) + strlen($delimiter));
-                    if (!$objectList->hasCommonPrefix($commonPrefix)) {
-                        $objectList->addCommonPrefix($commonPrefix);
-                    }
-                } else {
-                    // non-delimited file
-                    $objectList->addFile($file);
-                }
-            } else {
-                // no delimiter
-                $objectList->addFile($file);
-            }
-        }
-
-        return $objectList;
+        return $this->createObjectListFromIterator($iterator, $prefix, $delimiter, $maxKeys);
     }
 
     public function getFile(Bucket $bucket, string $name, ?string $versionId = ''): ?File
