@@ -238,7 +238,7 @@ class BucketService
             return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'currentVersion' => true, 'multipartUploadId' => null], ['mtime' => 'DESC', 'id' => 'DESC']);
         } else {
             // return specific version
-            return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'versionId' => $versionId, 'multipartUploadId' => null]);
+            return $this->fileRepository->findOneBy(['bucket' => $bucket, 'name' => $name, 'version' => $versionId, 'multipartUploadId' => null]);
         }
     }
 
