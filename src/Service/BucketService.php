@@ -11,6 +11,7 @@ use App\Entity\Policy;
 use App\Entity\User;
 use App\Exception\Bucket\BucketExistsException;
 use App\Exception\Bucket\BucketNotEmptyException;
+use App\Exception\Bucket\InvalidVersioningConfigException;
 use App\Exception\EmmerRuntimeException;
 use App\Exception\Object\InvalidManifestException;
 use App\Repository\BucketRepository;
@@ -654,5 +655,23 @@ class BucketService
         }
 
         return $result;
+    }
+
+    public function setBucketVersioning(Bucket $bucket, \SimpleXMLElement $config, bool $flush = false): void
+    {
+        // must be VersioningConfiguration request
+        if ('VersioningConfiguration' !== $config->getName()) {
+            throw new InvalidVersioningConfigException('Provided XML is not a valid VersioningConfiguration element', 0);
+        }
+
+        if (!$config->Status || ('Enabled' !== (string) $config->Status && 'Suspended' !== (string) $config->Status)) {
+            throw new InvalidVersioningConfigException('Invalid Status in VersioningConfiguration element', 1);
+        }
+
+        $bucket->setVersioned('Enabled' === (string) $config->Status);
+        $this->entityManager->persist($bucket);
+        if ($flush) {
+            $this->entityManager->flush();
+        }
     }
 }

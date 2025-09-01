@@ -8,9 +8,11 @@ use App\Controller\Api\CreateMultipartUpload;
 use App\Controller\Api\DeleteBucketPolicy;
 use App\Controller\Api\DeleteObjects;
 use App\Controller\Api\GetBucketPolicy;
+use App\Controller\Api\GetBucketVersioning;
 use App\Controller\Api\ListMultipartUploads;
 use App\Controller\Api\ListObjectVersions;
 use App\Controller\Api\PutBucketPolicy;
+use App\Controller\Api\PutBucketVersioning;
 use App\Controller\Api\UploadPart;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -32,6 +34,9 @@ class RoutingListener implements EventSubscriberInterface
         if (preg_match('#^GET /([^/]+)/?$#', $requestString, $matches)) {
             if ($request->query->has('policy')) {
                 $request->attributes->set('_controller', GetBucketPolicy::class.'::getBucketPolicy');
+                $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('versioning')) {
+                $request->attributes->set('_controller', GetBucketVersioning::class.'::getBucketVersioning');
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('versions')) {
                 $request->attributes->set('_controller', ListObjectVersions::class.'::listObjectVersions');
@@ -55,10 +60,13 @@ class RoutingListener implements EventSubscriberInterface
             if ($request->query->has('policy')) {
                 $request->attributes->set('_controller', PutBucketPolicy::class.'::putBucketPolicy');
                 $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('versioning')) {
+                $request->attributes->set('_controller', PutBucketVersioning::class.'::putBucketVersioning');
+                $request->attributes->set('bucket', $matches[1]);
             }
         }
 
-        // match PUT /{delete}
+        // match DELETE /{bucket}
         if (preg_match('#^DELETE /([^/]+)/?$#', $requestString, $matches)) {
             if ($request->query->has('policy')) {
                 $request->attributes->set('_controller', DeleteBucketPolicy::class.'::deleteBucketPolicy');
