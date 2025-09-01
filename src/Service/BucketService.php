@@ -144,9 +144,9 @@ class BucketService
     {
         if ($delimiter) {
             // we need to group files, request
-            $iterator = $this->fileRepository->findPagedByBucketAndPrefix($bucket, $prefix, $marker, 0, $markerType);
+            $iterator = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, $prefix, $marker, 0, $markerType);
         } else {
-            $iterator = $this->fileRepository->findPagedByBucketAndPrefix($bucket, $prefix, $marker, $maxKeys + 1, $markerType);
+            $iterator = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, $prefix, $marker, $maxKeys + 1, $markerType);
         }
 
         // delimiter, return files without delimiter, and group those with delimiter

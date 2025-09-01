@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Bucket;
 use App\Entity\File;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -20,17 +21,102 @@ class FileRepository extends ServiceEntityRepository
     /**
      * @return File[]
      */
-    public function findPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $marker = '', int $maxKeys = 100, int $markerType = 1): iterable
+    public function findObjectsPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $marker = '', int $maxKeys = 1000, int $markerType = 1): iterable
     {
-        $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
+        $qb = $this->getPagedQbByBucketAndPrefix($bucket, $prefix, $markerType, $marker, $maxKeys);
 
-        $qb = $this->createQueryBuilder('f')
+        $qb
+            ->andWhere('f.multipartUploadId IS NULL')
             ->andWhere('f.currentVersion = 1')
+        ;
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
+
+    /**
+     * @return File[]
+     */
+    public function findVersionsPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $keyMarker = '', string $versionMarker = '', int $maxKeys = 1000): iterable
+    {
+        $qb = $this->getPagedQbByBucketAndPrefix($bucket, $prefix, 1, $keyMarker, $maxKeys);
+
+        $qb
+            ->andWhere('f.multipartUploadId IS NULL')
+            ->addOrderBy('f.id', 'DESC')
+        ;
+
+        if ($keyMarker && $versionMarker) {
+            $expr = $qb->expr();
+            $qb
+                ->andWhere(
+                    $expr->orX(
+                        $expr->andX(
+                            $expr->eq('f.name', ':name'),
+                            $expr->gte('f.version', ':version')
+                        ),
+                        $expr->gt('f.name', ':name')
+                    )
+                )
+                ->setParameter('name', $keyMarker)
+                ->setParameter('version', $versionMarker)
+            ;
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
+
+    /**
+     * @return File[]
+     */
+    public function findMpuPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $keyMarker = '', string $uploadIdMarker = '', int $maxKeys = 1000): iterable
+    {
+        $qb = $this->getPagedQbByBucketAndPrefix($bucket, $prefix, 1, $keyMarker, $maxKeys);
+
+        $qb
+            ->andWhere('f.multipartUploadId IS NOT NULL')
+            ->addOrderBy('f.id', 'ASC')
+        ;
+
+        if ($keyMarker && $uploadIdMarker) {
+            $expr = $qb->expr();
+            $qb
+                ->andWhere(
+                    $expr->orX(
+                        $expr->andX(
+                            $expr->eq('f.name', ':name'),
+                            $expr->gte('f.multipartUploadId', ':uploadId')
+                        ),
+                        $expr->gt('f.name', ':name')
+                    )
+                )
+                ->setParameter('name', $keyMarker)
+                ->setParameter('uploadId', $uploadIdMarker)
+            ;
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
+
+    private function getPagedQbByBucketAndPrefix(Bucket $bucket, string $prefix, int $markerType = 1, string $marker = '', int $maxKeys = 1000): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('f')
             ->andWhere('f.bucket = :bucket')
-            ->andWhere('f.name LIKE :prefix')
             ->setParameter('bucket', $bucket)
-            ->setParameter('prefix', $escapedPrefix.'%')
             ->orderBy('f.name', 'ASC');
+
+        if ($prefix) {
+            $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
+            $qb
+                ->andWhere('f.name LIKE :prefix')
+                ->setParameter('prefix', $escapedPrefix.'%')
+            ;
+        }
 
         if ($marker) {
             if (2 === $markerType) {
@@ -50,103 +136,6 @@ class FileRepository extends ServiceEntityRepository
             $qb->setMaxResults($maxKeys);
         }
 
-        return $qb
-            ->getQuery()
-            ->toIterable();
-    }
-
-    /**
-     * @return File[]
-     */
-    public function findVersionsPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $keyMarker = '', string $versionMarker = '', int $maxKeys = 100): iterable
-    {
-        $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
-
-        $qb = $this->createQueryBuilder('f')
-            ->andWhere('f.bucket = :bucket')
-            ->andWhere('f.name LIKE :prefix')
-            ->setParameter('bucket', $bucket)
-            ->setParameter('prefix', $escapedPrefix.'%')
-            ->orderBy('f.name', 'ASC')
-            ->addOrderBy('f.id', 'DESC')
-        ;
-
-        if ($keyMarker && $versionMarker) {
-            $expr = $qb->expr();
-            $qb
-                ->andWhere(
-                    $expr->orX(
-                        $expr->andX(
-                            $expr->eq('f.name', ':name'),
-                            $expr->gte('f.version', ':version')
-                        ),
-                        $expr->gt('f.name', ':name')
-                    )
-                )
-                ->setParameter('name', $keyMarker)
-                ->setParameter('version', $versionMarker)
-            ;
-        } elseif ($keyMarker) {
-            $qb
-                ->andWhere('f.name >= :name')
-                ->setParameter('name', $keyMarker)
-            ;
-        }
-
-        if ($maxKeys > 0) {
-            $qb->setMaxResults($maxKeys);
-        }
-
-        return $qb
-            ->getQuery()
-            ->toIterable();
-    }
-
-    /**
-     * @return File[]
-     */
-    public function findMpuPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $keyMarker = '', string $uploadIdMarker = '', int $maxKeys = 100): iterable
-    {
-        $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
-
-        $qb = $this->createQueryBuilder('f')
-            ->andWhere('f.bucket = :bucket')
-            ->andWhere('f.name LIKE :prefix')
-            ->andWhere('f.multipartUploadId IS NOT NULL')
-            ->setParameter('bucket', $bucket)
-            ->setParameter('prefix', $escapedPrefix.'%')
-            ->orderBy('f.name', 'ASC')
-            ->addOrderBy('f.id', 'ASC')
-        ;
-
-        if ($keyMarker && $uploadIdMarker) {
-            $expr = $qb->expr();
-            $qb
-                ->andWhere(
-                    $expr->orX(
-                        $expr->andX(
-                            $expr->eq('f.name', ':name'),
-                            $expr->gte('f.multipartUploadId', ':uploadId')
-                        ),
-                        $expr->gt('f.name', ':name')
-                    )
-                )
-                ->setParameter('name', $keyMarker)
-                ->setParameter('uploadId', $uploadIdMarker)
-            ;
-        } elseif ($keyMarker) {
-            $qb
-                ->andWhere('f.name >= :name')
-                ->setParameter('name', $keyMarker)
-            ;
-        }
-
-        if ($maxKeys > 0) {
-            $qb->setMaxResults($maxKeys);
-        }
-
-        return $qb
-            ->getQuery()
-            ->toIterable();
+        return $qb;
     }
 }
