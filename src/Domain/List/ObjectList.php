@@ -12,7 +12,7 @@ class ObjectList
     /** @var string[] */
     private array $commonPrefixes = [];
     private string $nextMarker = '';
-    private string $nextVersionMarker = '';
+    private string $nextMarker2 = '';
 
     public function isTruncated(): bool
     {
@@ -65,13 +65,13 @@ class ObjectList
         $this->nextMarker = $nextMarker;
     }
 
-    public function getNextVersionMarker(): string
+    public function getNextMarker2(): string
     {
-        return $this->nextVersionMarker;
+        return $this->nextMarker2;
     }
 
-    public function setNextVersionMarker(string $nextVersionMarker): void
+    public function setNextMarker2(string $nextMarker2): void
     {
-        $this->nextVersionMarker = $nextVersionMarker;
+        $this->nextMarker2 = $nextMarker2;
     }
 }

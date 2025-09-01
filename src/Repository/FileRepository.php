@@ -101,4 +101,52 @@ class FileRepository extends ServiceEntityRepository
             ->getQuery()
             ->toIterable();
     }
+
+    /**
+     * @return File[]
+     */
+    public function findMpuPagedByBucketAndPrefix(Bucket $bucket, string $prefix, string $keyMarker = '', string $uploadIdMarker = '', int $maxKeys = 100): iterable
+    {
+        $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $prefix);
+
+        $qb = $this->createQueryBuilder('f')
+            ->andWhere('f.bucket = :bucket')
+            ->andWhere('f.name LIKE :prefix')
+            ->andWhere('f.multipartUploadId IS NOT NULL')
+            ->setParameter('bucket', $bucket)
+            ->setParameter('prefix', $escapedPrefix.'%')
+            ->orderBy('f.name', 'ASC')
+            ->addOrderBy('f.id', 'ASC')
+        ;
+
+        if ($keyMarker && $uploadIdMarker) {
+            $expr = $qb->expr();
+            $qb
+                ->andWhere(
+                    $expr->orX(
+                        $expr->andX(
+                            $expr->eq('f.name', ':name'),
+                            $expr->gte('f.multipartUploadId', ':uploadId')
+                        ),
+                        $expr->gt('f.name', ':name')
+                    )
+                )
+                ->setParameter('name', $keyMarker)
+                ->setParameter('uploadId', $uploadIdMarker)
+            ;
+        } elseif ($keyMarker) {
+            $qb
+                ->andWhere('f.name >= :name')
+                ->setParameter('name', $keyMarker)
+            ;
+        }
+
+        if ($maxKeys > 0) {
+            $qb->setMaxResults($maxKeys);
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
 }

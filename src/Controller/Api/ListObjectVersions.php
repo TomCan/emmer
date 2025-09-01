@@ -76,7 +76,7 @@ class ListObjectVersions extends AbstractController
 
         if ($objectList->isTruncated()) {
             $data['ListVersionsResult']['NextKeyMarker'] = $objectList->getNextMarker();
-            $data['ListVersionsResult']['NextVersionIdMarker'] = $objectList->getNextVersionMarker();
+            $data['ListVersionsResult']['NextVersionIdMarker'] = $objectList->getNextMarker2();
         }
 
         if (count($objectList->getFiles()) > 0) {
