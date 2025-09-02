@@ -24,8 +24,13 @@ class AwsV4Authenticator extends AbstractAuthenticator
 
     public function supports(Request $request): ?bool
     {
-        return $request->headers->has('authorization')
-            && str_starts_with($request->headers->get('authorization'), 'AWS4-HMAC-SHA256');
+        return
+            (
+                $request->headers->has('authorization')
+                && str_starts_with($request->headers->get('authorization'), 'AWS4-HMAC-SHA256')
+            ) || (
+                $request->query->has('X-Amz-Signature') && $request->query->has('X-Amz-Credential')
+            );
     }
 
     public function authenticate(Request $request): Passport

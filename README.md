@@ -15,7 +15,7 @@ This project is in early development and by no means ready for production use.
 |------------------------------|--------|
 | Authentication               | ✅      |
 | - V4 Headers                 | ✅      |
-| - V4 Signed URLs             | ❌      |
+| - V4 Signed URLs             | ✅      |
 | Authorization                | ✅      |
 | - Policy system              | ✅      |
 | Buckets                      | ✅      |
