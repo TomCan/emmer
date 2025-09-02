@@ -281,7 +281,7 @@ class AwsSignatureV4Validator
     private function isValidTimestamp(string $timestamp): bool
     {
         try {
-            $requestTime = \DateTime::createFromFormat('Ymd\THis\Z', $timestamp);
+            $requestTime = \DateTime::createFromFormat('Ymd\THis\Z', $timestamp, new \DateTimeZone('UTC'));
             if (!$requestTime) {
                 return false;
             }
