@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Domain\List\BucketList;
 use App\Domain\List\ObjectList;
+use App\Domain\List\ObjectpartList;
 use App\Entity\Bucket;
 use App\Entity\File;
 use App\Entity\Filepart;
@@ -182,6 +183,28 @@ class BucketService
         return $objectList;
     }
 
+    /**
+     * @param Filepart[] $iterator
+     */
+    private function createObjectpartListFromIterator(mixed $iterator, int $maxKeys): ObjectpartList
+    {
+        // delimiter, return files without delimiter, and group those with delimiter
+        $objectpartList = new ObjectpartList();
+        foreach ($iterator as $filepart) {
+            // check if we have reached max-keys
+            if (count($objectpartList->getFileparts()) == $maxKeys) {
+                $objectpartList->setTruncated(true);
+                $objectpartList->setNextMarker($filepart->getPartNumber());
+
+                return $objectpartList;
+            }
+
+            $objectpartList->addFilepart($filepart);
+        }
+
+        return $objectpartList;
+    }
+
     public function listFiles(Bucket $bucket, string $prefix = '', string $delimiter = '', string $marker = '', int $markerType = 1, int $maxKeys = 100): ObjectList
     {
         if ($delimiter) {
@@ -216,6 +239,13 @@ class BucketService
         }
 
         return $this->createObjectListFromIterator($iterator, $prefix, $delimiter, $maxKeys);
+    }
+
+    public function listMpuParts(File $file, int $partNumberMarker = 0, int $maxParts = 100): ObjectpartList
+    {
+        $iterator = $this->filepartRepository->findPagedByFile($file, $partNumberMarker, $maxParts + 1);
+
+        return $this->createObjectpartListFromIterator($iterator, $maxParts);
     }
 
     public function getFile(Bucket $bucket, string $name, ?string $versionId = ''): ?File

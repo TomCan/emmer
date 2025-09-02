@@ -39,7 +39,7 @@ This project is in early development and by no means ready for production use.
 | - List MPU                   | ✅      |
 | - UploadPart                 | ✅      |
 | - UploadPartCopy             | ❌      |
-| - ListParts                  | ❌      |
+| - ListParts                  | ✅      |
 | Versioning                   | ✅      |
 | - List object versions       | ✅      |
 | - Get/Delete object versions | ✅      |
@@ -49,7 +49,6 @@ This project is in early development and by no means ready for production use.
 | Maintencance                 | ❌      |
 | - Lifecycle policies         | ❌      |
 | - MPU cleanup                | ❌      |
-| Maintencance                 | ❌      |
 | Regions (low prio)           | ❌      |
 | Storage classes (low prio)   | ❌      |
 

@@ -11,6 +11,7 @@ use App\Controller\Api\GetBucketPolicy;
 use App\Controller\Api\GetBucketVersioning;
 use App\Controller\Api\ListMultipartUploads;
 use App\Controller\Api\ListObjectVersions;
+use App\Controller\Api\ListParts;
 use App\Controller\Api\PutBucketPolicy;
 use App\Controller\Api\PutBucketVersioning;
 use App\Controller\Api\UploadPart;
@@ -71,6 +72,17 @@ class RoutingListener implements EventSubscriberInterface
             if ($request->query->has('policy')) {
                 $request->attributes->set('_controller', DeleteBucketPolicy::class.'::deleteBucketPolicy');
                 $request->attributes->set('bucket', $matches[1]);
+            }
+        }
+
+        // match GET /{bucket}/{key}
+        if (preg_match('#^GET /([^/]+)/(.+)$#', $requestString, $matches)) {
+            if ($request->query->has('uploadId')) {
+                // Multipart upload: switch to CreateMultipartUpload controller
+                $request->attributes->set('_controller', ListParts::class.'::listParts');
+                $request->attributes->set('bucket', $matches[1]);
+                $request->attributes->set('key', $matches[2]);
+                $request->attributes->set('uploadId', trim($request->query->getString('uploadId')));
             }
         }
 

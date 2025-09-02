@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Bucket;
+use App\Entity\File;
 use App\Entity\Filepart;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -28,5 +29,31 @@ class FilepartRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * @return Filepart[]
+     */
+    public function findPagedByFile(File $file, int $marker = 0, int $maxParts = 1000): iterable
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->andWhere('p.file = :file')
+            ->setParameter('file', $file)
+            ->orderBy('p.partNumber', 'ASC');
+
+        if ($marker) {
+            // treat as start-after
+            $qb
+                ->andWhere('p.partNumber > :marker')
+                ->setParameter('marker', $marker);
+        }
+
+        if ($maxParts > 0) {
+            $qb->setMaxResults($maxParts);
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
     }
 }
