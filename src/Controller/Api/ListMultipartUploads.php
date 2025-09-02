@@ -89,6 +89,7 @@ class ListMultipartUploads extends AbstractController
                     'Owner' => [
                         'ID' => $bucket->getOwner()->getIdentifier(),
                     ],
+                    'UploadId' => $file->getMultipartUploadId(),
                 ];
                 $data['ListMultipartUploadsResult']['#Upload'][] = $item;
             }
