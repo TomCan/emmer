@@ -55,9 +55,9 @@ class PutObject extends AbstractController
         $bucketService->saveFileAndParts($newFile);
         $bucketService->makeVersionActive($newFile, $file, true);
 
-        $headers = ['ETag' => $file->getEtag()];
-        if ($file->getVersion()) {
-            $headers['x-amz-version-id'] = $file->getVersion();
+        $headers = ['ETag' => $newFile->getEtag()];
+        if ($newFile->getVersion()) {
+            $headers['x-amz-version-id'] = $newFile->getVersion();
         }
 
         return $responseService->createResponse(
