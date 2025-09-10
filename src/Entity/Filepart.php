@@ -15,13 +15,13 @@ class Filepart
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 1024)]
+    #[ORM\Column(type: 'binary', length: 1024)]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
     private ?string $path = null;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'bigint', options: ['unsigned' => true])]
     private ?int $size = null;
 
     #[ORM\Column]
