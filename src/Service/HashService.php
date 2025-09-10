@@ -25,4 +25,18 @@ class HashService
     {
         return hash_file($algorithm, $bucketPath.DIRECTORY_SEPARATOR.$filepart->getPath());
     }
+
+    /*
+     * Instead of hashing the entire file, we can hash the hashes of the fileparts.
+     */
+    public function hashFileFilepartHashes(File $file, string $algorithm = 'md5'): string
+    {
+        $hashContext = hash_init($algorithm);
+
+        foreach ($file->getFileparts() as $filepart) {
+            hash_update($hashContext, $filepart->getEtag());
+        }
+
+        return hash_final($hashContext);
+    }
 }

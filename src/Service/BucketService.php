@@ -502,7 +502,7 @@ class BucketService
             }
 
             // calculate md5 hash of the File across all parts
-            $targetFile->setEtag('"'.$this->hashService->hashFile($targetFile, $bucketPath).'"');
+            $targetFile->setEtag('"'.$this->hashService->hashFileFilepartHashes($targetFile).'"');
             $targetFile->setSize($this->calculateFileSize($targetFile));
             $targetFile->setMtime(new \DateTime());
 
