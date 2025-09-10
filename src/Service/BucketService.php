@@ -166,7 +166,7 @@ class BucketService
                 }
                 if (str_contains($fileName, $delimiter)) {
                     // include prefix and delimiter in commonPrefix name
-                    $commonPrefix = $prefix.substr($fileName, 0, strrpos($fileName, $delimiter) + strlen($delimiter));
+                    $commonPrefix = $prefix.substr($fileName, 0, strpos($fileName, $delimiter) + strlen($delimiter));
                     if (!$objectList->hasCommonPrefix($commonPrefix)) {
                         $objectList->addCommonPrefix($commonPrefix);
                     }
