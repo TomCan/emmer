@@ -424,7 +424,7 @@ class BucketService
         $file->setMtime(new \DateTime());
         $filePart->setMtime($file->getMtime());
         $filePart->setSize($bytesWritten);
-        $filePart->setEtag($this->hashService->hashFilepart($filePart, $this->filesystemService->getBucketPath($file->getBucket())));
+        $filePart->setEtag('"'.$this->hashService->hashFilepart($filePart, $this->filesystemService->getBucketPath($file->getBucket())).'"');
 
         return $filePart;
     }
@@ -460,9 +460,6 @@ class BucketService
             }
 
             $etag = (string) $part->ETag;
-            if (str_starts_with($etag, '"') && str_ends_with($etag, '"')) {
-                $etag = substr($etag, 1, -1);
-            }
             if ('' !== $etag && $fileParts[$partNumber - 1]->getEtag() !== $etag) {
                 throw new InvalidManifestException('Part '.$partNumber.' ETag does not match', 3);
             }
@@ -489,7 +486,7 @@ class BucketService
             $bytesWritten = $this->filesystemService->mergeFileparts($file, $targetPart);
 
             // calculate md5 hash of merged file
-            $targetPart->setEtag($this->hashService->hashFilepart($targetPart, $bucketPath));
+            $targetPart->setEtag('"'.$this->hashService->hashFilepart($targetPart, $bucketPath).'"');
             $targetPart->setSize($bytesWritten);
             $targetPart->setMtime(new \DateTime());
 
@@ -505,7 +502,7 @@ class BucketService
             }
 
             // calculate md5 hash of the File across all parts
-            $targetFile->setEtag($this->hashService->hashFile($targetFile, $bucketPath));
+            $targetFile->setEtag('"'.$this->hashService->hashFile($targetFile, $bucketPath).'"');
             $targetFile->setSize($this->calculateFileSize($targetFile));
             $targetFile->setMtime(new \DateTime());
 

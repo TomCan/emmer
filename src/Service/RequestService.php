@@ -91,10 +91,6 @@ class RequestService
         $values = explode(',', $headerValue);
         foreach ($values as $value) {
             $value = trim($value);
-            if (str_starts_with($value, '"') && str_ends_with($value, '"')) {
-                // stip quotes
-                $value = substr($value, 1, -1);
-            }
             if ('*' == $value || $etagValue == $value) {
                 // matches or wildcard
                 return true;

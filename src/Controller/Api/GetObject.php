@@ -104,7 +104,7 @@ class GetObject extends AbstractController
         $headers = [
             'Content-Length' => $file->getSize(),
             'Last-Modified' => $file->getMtime()->format('D, d M Y H:i:s').' GMT',
-            'ETag' => '"'.$file->getEtag().'"',
+            'ETag' => $file->getEtag(),
             'Accept-Ranges' => 'bytes',
         ];
 

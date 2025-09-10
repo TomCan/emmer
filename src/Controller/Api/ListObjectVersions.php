@@ -100,7 +100,7 @@ class ListObjectVersions extends AbstractController
                         'Key' => ('url' == $encodingType) ? urlencode($file->getName()) : $file->getName(),
                         'LastModified' => $file->getMtime()->format('c'),
                         'VersionId' => $file->getVersion() ?? 'null',
-                        'ETag' => '"'.$file->getEtag().'"',
+                        'ETag' => $file->getEtag(),
                         'Size' => $file->getSize(),
                         'StorageClass' => 'STANDARD',
                         'Owner' => [

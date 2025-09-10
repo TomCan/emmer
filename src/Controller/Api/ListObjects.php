@@ -119,7 +119,7 @@ class ListObjects extends AbstractController
                 $item = [
                     'Key' => ('url' == $encodingType) ? urlencode($file->getName()) : $file->getName(),
                     'LastModified' => $file->getMtime()->format('c'),
-                    'ETag' => '"'.$file->getEtag().'"',
+                    'ETag' => $file->getEtag(),
                     'Size' => $file->getSize(),
                     'StorageClass' => 'STANDARD',
                 ];

@@ -54,7 +54,7 @@ class CompleteMultipartUpload extends AbstractController
                             'Location' => $bucket->getName().'/'.$key,
                             'Bucket' => $bucket->getName(),
                             'Key' => $key,
-                            'ETag' => '"'.$targetFile->getEtag().'"',
+                            'ETag' => $targetFile->getEtag(),
                         ],
                     ]
                 );

@@ -70,7 +70,7 @@ class ListParts extends AbstractController
             $data['ListPartsResult']['#Part'] = [];
             foreach ($partList->getFileparts() as $filepart) {
                 $item = [
-                    'ETag' => '"'.$filepart->getEtag().'"',
+                    'ETag' => $filepart->getEtag(),
                     'LastModified' => $filepart->getMtime()->format('c'),
                     'PartNumber' => $filepart->getPartNumber(),
                     'Size' => $filepart->getSize(),
