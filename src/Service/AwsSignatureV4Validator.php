@@ -80,7 +80,7 @@ class AwsSignatureV4Validator
         }
 
         // Validate timestamp
-        if (!$this->isValidTimestamp($timestamp, true)) {
+        if (!$this->isValidTimestamp($timestamp)) {
             throw new AuthenticationException('Invalid timestamp.');
         }
 
@@ -137,7 +137,7 @@ class AwsSignatureV4Validator
         }
 
         // Validate timestamp
-        if (!$this->isValidTimestamp($date, false)) {
+        if (!$this->isValidTimestamp($date, 0)) {
             throw new AuthenticationException('Invalid timestamp.');
         }
 
@@ -490,7 +490,7 @@ class AwsSignatureV4Validator
     /**
      * Validate timestamp (optional security check).
      */
-    private function isValidTimestamp(string $timestamp, bool $skewCheck = true): bool
+    private function isValidTimestamp(string $timestamp, int $skewCheck = 900): bool
     {
         try {
             // Explicitly create the DateTime object in UTC timezone
@@ -500,11 +500,11 @@ class AwsSignatureV4Validator
             }
 
             if ($skewCheck) {
+                // Allow for clock skew
                 $now = new \DateTime('now', new \DateTimeZone('UTC'));
                 $diff = abs($now->getTimestamp() - $requestTime->getTimestamp());
 
-                // Allow 5 minutes of clock skew
-                return $diff <= 300;
+                return $diff <= 900;
             }
 
             return true;
