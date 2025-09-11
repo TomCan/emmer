@@ -17,7 +17,7 @@ class LifecycleService
         if (null !== $mpu) {
             $expireDate = new \DateTime($mpu.' hours ago');
             if ($io instanceof OutputInterface) {
-                $io->writeln('Deleting multi-part uploads older than '.$expireDate->format('Y-m-d H:i:s'));
+                $io->writeln('Deleting multi-part uploads older than '.$expireDate->format('Y-m-d H:i:s').' from bucket '.$bucket->getName());
             }
             $keyMarker = '';
             $uploadIdMarker = '';
@@ -51,7 +51,7 @@ class LifecycleService
         if (null !== $ncv) {
             $expireDate = new \DateTime($ncv.' hours ago');
             if ($io instanceof OutputInterface) {
-                $io->writeln('Deleting non-current version older than '.$expireDate->format('Y-m-d H:i:s'));
+                $io->writeln('Deleting non-current version older than '.$expireDate->format('Y-m-d H:i:s').' from bucket '.$bucket->getName());
             }
             $keyMarker = '';
             $versionMarker = '';
