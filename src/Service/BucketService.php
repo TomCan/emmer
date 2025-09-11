@@ -43,6 +43,14 @@ class BucketService
         return $this->bucketRepository->findOneBy(['name' => $name]);
     }
 
+    /**
+     * @return array<Bucket>
+     */
+    public function getBuckets(): array
+    {
+        return $this->bucketRepository->findAll();
+    }
+
     public function createBucket(string $name, User $user, string $description = '', string $path = '', bool $addDefaultPolicies = true, bool $flush = true): Bucket
     {
         $bucket = $this->getBucket($name);

@@ -47,7 +47,7 @@ class BucketLifecycleRunCommand extends Command
         if ($bucket) {
             $buckets = [$this->bucketService->getBucket($bucket)];
         } else {
-            $buckets = [];
+            $buckets = $this->bucketService->getBuckets();
         }
 
         foreach ($buckets as $bucket) {
