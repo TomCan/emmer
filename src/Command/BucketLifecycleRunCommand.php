@@ -28,6 +28,7 @@ class BucketLifecycleRunCommand extends Command
         $this
             ->addOption('multi-part-uploads', null, InputOption::VALUE_REQUIRED, 'Delete multipart uploads')
             ->addOption('non-current-versions', null, InputOption::VALUE_REQUIRED, 'Delete non-current versions')
+            ->addOption('current-versions', null, InputOption::VALUE_REQUIRED, 'Delete current versions')
             ->addArgument('bucket', InputArgument::OPTIONAL, 'Bucket name')
         ;
     }
@@ -36,14 +37,18 @@ class BucketLifecycleRunCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
+        // get arguments / options
         $bucket = $input->getArgument('bucket');
-        $mpu = $input->getOption('multi-part-uploads');
-        $ncv = $input->getOption('non-current-versions');
+        $mpu = $input->getOption('multi-part-uploads') ?? -1;
+        $ncv = $input->getOption('non-current-versions') ?? -1;
+        $cv = $input->getOption('current-versions') ?? -1;
 
-        if (null == $mpu && null == $ncv) {
+        // check if at least one option is specified
+        if (-1 == $mpu && -1 == $ncv && -1 == $cv) {
             $io->error('You must specify at least one option');
         }
 
+        // get a specific bucket or all buckets
         if ($bucket) {
             $buckets = [$this->bucketService->getBucket($bucket)];
         } else {
@@ -51,7 +56,7 @@ class BucketLifecycleRunCommand extends Command
         }
 
         foreach ($buckets as $bucket) {
-            $this->lifecycleService->run($bucket, $mpu, $ncv, $output);
+            $this->lifecycleService->run($bucket, $mpu, $ncv, $cv, $output);
         }
 
         return Command::SUCCESS;
