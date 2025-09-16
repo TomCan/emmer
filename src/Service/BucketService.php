@@ -12,6 +12,7 @@ use App\Entity\Policy;
 use App\Entity\User;
 use App\Exception\Bucket\BucketExistsException;
 use App\Exception\Bucket\BucketNotEmptyException;
+use App\Exception\Bucket\InvalidBucketNameException;
 use App\Exception\Bucket\InvalidVersioningConfigException;
 use App\Exception\EmmerRuntimeException;
 use App\Exception\Object\InvalidManifestException;
@@ -38,6 +39,18 @@ class BucketService
     ) {
     }
 
+    public function isValidBucketName(string $name): bool
+    {
+        /*
+         * Can't start with xn--
+         * Can't contain 2 consecutive dots
+         * Must start and end with a lowercase letter or digit
+         * Must be at least minimum 3 and maximum 63 characters lowercase letters, digits, dots or hyphens
+         *  (so 1-61 characters + 1 start and 1 end character)
+         */
+        return preg_match('/^(?!xn--)(?!.*\.\.)[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/', $name);
+    }
+
     public function getBucket(string $name): ?Bucket
     {
         return $this->bucketRepository->findOneBy(['name' => $name]);
@@ -53,6 +66,10 @@ class BucketService
 
     public function createBucket(string $name, User $user, string $description = '', string $path = '', bool $addDefaultPolicies = true, bool $flush = true): Bucket
     {
+        if (!$this->isValidBucketName($name)) {
+            throw new InvalidBucketNameException('Bucket name is invalid');
+        }
+
         $bucket = $this->getBucket($name);
         if ($bucket) {
             if ($bucket->getOwner() === $user) {
