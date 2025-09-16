@@ -133,6 +133,9 @@ class LifecycleService
         } while ('' != $keyMarker);
     }
 
+    /**
+     * @return mixed[]
+     */
     public function parseLifecycleRules(string $rules): array
     {
         $xml = simplexml_load_string($rules);
@@ -148,6 +151,10 @@ class LifecycleService
         return $rules;
     }
 
+    /**
+     * @param \SimpleXMLElement $rule
+     * @return mixed[]
+     */
     public function parseLifecycleRule(mixed $rule): array
     {
         $parsedRule = [];
@@ -163,7 +170,7 @@ class LifecycleService
         }
 
         if (isset($rule->AbortIncompleteMultipartUpload)) {
-            if (isset($rule->AbortIncompleteMultipartUpload->DaysAfterInitiation) && is_numeric($rule->AbortIncompleteMultipartUpload->DaysAfterInitiation)) {
+            if (isset($rule->AbortIncompleteMultipartUpload->DaysAfterInitiation) && is_numeric((string) $rule->AbortIncompleteMultipartUpload->DaysAfterInitiation)) {
                 $days = (int) $rule->AbortIncompleteMultipartUpload->DaysAfterInitiation;
                 if ($days > 0) {
                     $parsedRule['abortmpu'] = $days;
@@ -184,7 +191,7 @@ class LifecycleService
             }
 
             if (isset($rule->Expiration->Days)) {
-                if (is_numeric($rule->Expiration->Days)) {
+                if (is_numeric((string) $rule->Expiration->Days)) {
                     $days = (int) $rule->Expiration->Days;
                     if ($days > 0) {
                         $parsedRule['expiration_days'] = $days;
@@ -205,7 +212,7 @@ class LifecycleService
 
         if (isset($rule->NoncurrentVersionExpiration)) {
             if (isset($rule->NoncurrentVersionExpiration->NoncurrentDays)) {
-                if (is_numeric($rule->NoncurrentVersionExpiration->NoncurrentDays)) {
+                if (is_numeric((string) $rule->NoncurrentVersionExpiration->NoncurrentDays)) {
                     $days = (int) $rule->NoncurrentVersionExpiration->NoncurrentDays;
                     if ($days > 0) {
                         $parsedRule['noncurrent_days'] = $days;
@@ -217,7 +224,7 @@ class LifecycleService
                 }
             }
             if (isset($rule->NoncurrentVersionExpiration->NewerNoncurrentVersions)) {
-                if (is_numeric($rule->NoncurrentVersionExpiration->NewerNoncurrentVersions)) {
+                if (is_numeric((string) $rule->NoncurrentVersionExpiration->NewerNoncurrentVersions)) {
                     $versions = (int) $rule->NoncurrentVersionExpiration->NewerNoncurrentVersions;
                     if ($versions > 0 && $versions < 100) {
                         $parsedRule['noncurrent_newer_versions'] = $versions;
@@ -247,6 +254,10 @@ class LifecycleService
         return $parsedRule;
     }
 
+    /**
+     * @param \SimpleXMLElement $filter
+     * @return mixed[]
+     */
     public function parseLifecycleFilter(mixed $filter, bool $and = false): array
     {
         $parsedFilter = [];
