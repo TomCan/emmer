@@ -7,9 +7,6 @@ namespace DoctrineMigrations;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
-/**
- * Auto-generated Migration: Please modify to your needs!
- */
 final class Version20250917182611 extends AbstractMigration
 {
     public function getDescription(): string
@@ -19,14 +16,12 @@ final class Version20250917182611 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('CREATE TABLE lifecycle_rules (id INT AUTO_INCREMENT NOT NULL, rules LONGTEXT NOT NULL, bucket_id INT NOT NULL, INDEX IDX_A65A60AD84CE584D (bucket_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci`');
         $this->addSql('ALTER TABLE lifecycle_rules ADD CONSTRAINT FK_A65A60AD84CE584D FOREIGN KEY (bucket_id) REFERENCES bucket (id)');
     }
 
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE lifecycle_rules DROP FOREIGN KEY FK_A65A60AD84CE584D');
         $this->addSql('DROP TABLE lifecycle_rules');
     }

@@ -324,7 +324,7 @@ class LifecycleService
             }
 
             // only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported
-            if (count(array_filter($parsedFilter)) > 1) {
+            if (count(array_filter($parsedFilter)) > 1 || count(array_filter($parsedFilter)) == 0) {
                 throw new InvalidLifecycleRuleException('Only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported');
             }
         }
@@ -357,5 +357,34 @@ class LifecycleService
         if ($flush) {
             $this->entityManager->flush();
         }
+    }
+
+    public function deleteLifecycleRules(LifecycleRules $lifecycleRules, bool $flush = false): void
+    {
+        $this->entityManager->remove($lifecycleRules);
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
+
+    public function filterRulesArray(array $array): array
+    {
+        foreach ($array as $key => &$value) {
+            if (is_array($value)) {
+                $value = $this->filterRulesArray($value);
+                // Remove empty arrays after filtering
+                if (empty($value)) {
+                    unset($array[$key]);
+                }
+            } else {
+                // Remove null values
+                if (null === $value) {
+                    unset($array[$key]);
+                }
+            }
+        }
+
+        return $array;
     }
 }

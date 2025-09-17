@@ -5,8 +5,10 @@ namespace App\EventListener;
 use App\Controller\Api\AbortMultipartUpload;
 use App\Controller\Api\CompleteMultipartUpload;
 use App\Controller\Api\CreateMultipartUpload;
+use App\Controller\Api\DeleteBucketLifecycle;
 use App\Controller\Api\DeleteBucketPolicy;
 use App\Controller\Api\DeleteObjects;
+use App\Controller\Api\GetBucketLifecycle;
 use App\Controller\Api\GetBucketPolicy;
 use App\Controller\Api\GetBucketVersioning;
 use App\Controller\Api\ListMultipartUploads;
@@ -36,6 +38,9 @@ class RoutingListener implements EventSubscriberInterface
         if (preg_match('#^GET /([^/]+)/?$#', $requestString, $matches)) {
             if ($request->query->has('policy')) {
                 $request->attributes->set('_controller', GetBucketPolicy::class.'::getBucketPolicy');
+                $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('lifecycle')) {
+                $request->attributes->set('_controller', GetBucketLifecycle::class.'::getBucketLifecycle');
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('versioning')) {
                 $request->attributes->set('_controller', GetBucketVersioning::class.'::getBucketVersioning');
@@ -75,6 +80,9 @@ class RoutingListener implements EventSubscriberInterface
         if (preg_match('#^DELETE /([^/]+)/?$#', $requestString, $matches)) {
             if ($request->query->has('policy')) {
                 $request->attributes->set('_controller', DeleteBucketPolicy::class.'::deleteBucketPolicy');
+                $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('lifecycle')) {
+                $request->attributes->set('_controller', DeleteBucketLifecycle::class.'::deleteBucketLifecycle');
                 $request->attributes->set('bucket', $matches[1]);
             }
         }
