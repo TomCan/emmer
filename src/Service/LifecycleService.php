@@ -153,6 +153,7 @@ class LifecycleService
 
     /**
      * @param \SimpleXMLElement $rule
+     *
      * @return mixed[]
      */
     public function parseLifecycleRule(mixed $rule): array
@@ -167,6 +168,8 @@ class LifecycleService
             if (strlen($parsedRule['id']) < 1 || strlen($parsedRule['id']) > 255) {
                 throw new InvalidLifecycleRuleException('Invalid ID in Rule element');
             }
+        } else {
+            $parsedRule['id'] = null;
         }
 
         if (isset($rule->AbortIncompleteMultipartUpload)) {
@@ -188,6 +191,8 @@ class LifecycleService
             if (isset($rule->Expiration->Date)) {
                 $date = \DateTime::createFromFormat(\DateTime::ATOM, (string) $rule->Expiration->Date, new \DateTimeZone('UTC'));
                 $parsedRule['expiration_date'] = $date;
+            } else {
+                $parsedRule['expiration_date'] = null;
             }
 
             if (isset($rule->Expiration->Days)) {
@@ -201,12 +206,18 @@ class LifecycleService
                 } else {
                     throw new InvalidLifecycleRuleException('Invalid Days in Expiration element');
                 }
+            } else {
+                $parsedRule['expiration_days'] = null;
             }
 
             if (isset($rule->Expiration->ExpiredObjectDeleteMarker)) {
                 if ('true' === (string) $rule->Expiration->ExpiredObjectDeleteMarker) {
                     $parsedRule['expiration_delete_marker'] = true;
+                } else {
+                    $parsedRule['expiration_delete_marker'] = false;
                 }
+            } else {
+                $parsedRule['expiration_delete_marker'] = null;
             }
         }
 
@@ -222,7 +233,10 @@ class LifecycleService
                 } else {
                     throw new InvalidLifecycleRuleException('Invalid NoncurrentDays in NoncurrentVersionExpiration element');
                 }
+            } else {
+                $parsedRule['noncurrent_days'] = null;
             }
+
             if (isset($rule->NoncurrentVersionExpiration->NewerNoncurrentVersions)) {
                 if (is_numeric((string) $rule->NoncurrentVersionExpiration->NewerNoncurrentVersions)) {
                     $versions = (int) $rule->NoncurrentVersionExpiration->NewerNoncurrentVersions;
@@ -234,7 +248,12 @@ class LifecycleService
                 } else {
                     throw new InvalidLifecycleRuleException('Invalid NewerNoncurrentVersions in NoncurrentVersionExpiration element');
                 }
+            } else {
+                $parsedRule['noncurrent_newer_versions'] = null;
             }
+        } else {
+            $parsedRule['noncurrent_days'] = null;
+            $parsedRule['noncurrent_newer_versions'] = null;
         }
 
         /*
@@ -246,9 +265,8 @@ class LifecycleService
         // Filters
         if (isset($rule->Filter)) {
             $parsedRule['filter'] = $this->parseLifecycleFilter($rule->Filter);
-            if (count($parsedRule['filter']) > 1) {
-                throw new InvalidLifecycleRuleException('Only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported');
-            }
+        } else {
+            $parsedRule['filter'] = null;
         }
 
         return $parsedRule;
@@ -256,6 +274,7 @@ class LifecycleService
 
     /**
      * @param \SimpleXMLElement $filter
+     *
      * @return mixed[]
      */
     public function parseLifecycleFilter(mixed $filter, bool $and = false): array
@@ -263,30 +282,47 @@ class LifecycleService
         $parsedFilter = [];
         if (isset($filter->Prefix)) {
             $parsedFilter['prefix'] = (string) $filter->Prefix;
+        } else {
+            $parsedFilter['prefix'] = null;
         }
         if ($filter->ObjectSizeGreaterThan) {
             $parsedFilter['size_greater'] = (int) $filter->ObjectSizeGreaterThan;
+        } else {
+            $parsedFilter['size_greater'] = null;
         }
         if ($filter->ObjectSizeLessThan) {
             $parsedFilter['size_less'] = (int) $filter->ObjectSizeLessThan;
+        } else {
+            $parsedFilter['size_less'] = null;
         }
 
         if ($and) {
-            // we are in an And block, Tags is array of tags
-            if (isset($filter->Tags)) {
-                $parsedFilter['and']['tags'] = [];
-                foreach ($filter->Tags as $tag) {
-                    $parsedFilter['and']['tags'][] = ['key' => (string) $tag->Key, 'value' => (string) $tag->Value];
+            // we are in an And block, Tag can be multiple elements
+            if (isset($filter->Tag)) {
+                $parsedFilter['tags'] = [];
+                foreach ($filter->Tag as $tag) {
+                    $parsedFilter['tags'][] = ['key' => (string) $tag->Key, 'value' => (string) $tag->Value];
                 }
+            } else {
+                $parsedFilter['tags'] = null;
             }
         } else {
             // we are in a rule, Tag is a single tag, and we need to parse And if present
             if (isset($filter->Tag->Key) && isset($filter->Tag->Value)) {
                 $parsedFilter['tag'] = ['key' => (string) $filter->Tag->Key, 'value' => (string) $filter->Tag->Value];
+            } else {
+                $parsedFilter['tag'] = null;
             }
 
             if (isset($filter->And)) {
                 $parsedFilter['and'] = $this->parseLifecycleFilter($filter->And, true);
+            } else {
+                $parsedFilter['and'] = null;
+            }
+
+            // only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported
+            if (count(array_filter($parsedFilter)) > 1) {
+                throw new InvalidLifecycleRuleException('Only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported');
             }
         }
 
