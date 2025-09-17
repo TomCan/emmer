@@ -41,10 +41,17 @@ class Bucket
     #[ORM\Column]
     private bool $versioned = false;
 
+    /**
+     * @var Collection<int, LifecycleRules>
+     */
+    #[ORM\OneToMany(targetEntity: LifecycleRules::class, mappedBy: 'bucket', orphanRemoval: true)]
+    private Collection $lifecycleRules;
+
     public function __construct()
     {
         $this->policies = new ArrayCollection();
         $this->ctime = new \DateTime();
+        $this->lifecycleRules = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -160,5 +167,35 @@ class Bucket
     public function setVersioned(bool $versioned): void
     {
         $this->versioned = $versioned;
+    }
+
+    /**
+     * @return Collection<int, LifecycleRules>
+     */
+    public function getLifecycleRules(): Collection
+    {
+        return $this->lifecycleRules;
+    }
+
+    public function addLifecycleRule(LifecycleRules $lifecycleRule): static
+    {
+        if (!$this->lifecycleRules->contains($lifecycleRule)) {
+            $this->lifecycleRules->add($lifecycleRule);
+            $lifecycleRule->setBucket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLifecycleRule(LifecycleRules $lifecycleRule): static
+    {
+        if ($this->lifecycleRules->removeElement($lifecycleRule)) {
+            // set the owning side to null (unless already changed)
+            if ($lifecycleRule->getBucket() === $this) {
+                $lifecycleRule->setBucket(null);
+            }
+        }
+
+        return $this;
     }
 }
