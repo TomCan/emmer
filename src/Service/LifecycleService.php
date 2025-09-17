@@ -3,13 +3,16 @@
 namespace App\Service;
 
 use App\Entity\Bucket;
+use App\Entity\LifecycleRules;
 use App\Exception\Lifecycle\InvalidLifecycleRuleException;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class LifecycleService
 {
     public function __construct(
         private BucketService $bucketService,
+        private EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -327,5 +330,32 @@ class LifecycleService
         }
 
         return $parsedFilter;
+    }
+
+    /**
+     * Entity operations.
+     */
+    public function setBucketLifecycleRules(Bucket $bucket, string $xml, bool $flush = false): LifecycleRules
+    {
+        // not using parsed result here, just to make sure it's valid
+        $rules = $this->parseLifecycleRules($xml);
+
+        foreach ($bucket->getLifecycleRules() as $rule) {
+            $this->entityManager->remove($rule);
+        }
+
+        $lifecycleRules = new LifecycleRules($bucket, $xml);
+        $this->saveLifecycleRules($lifecycleRules, $flush);
+
+        return $lifecycleRules;
+    }
+
+    public function saveLifecycleRules(LifecycleRules $lifecycleRules, bool $flush = false): void
+    {
+        $this->entityManager->persist($lifecycleRules);
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
     }
 }

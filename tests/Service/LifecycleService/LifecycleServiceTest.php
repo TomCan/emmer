@@ -5,6 +5,7 @@ namespace App\Tests\Service;
 use App\Exception\Lifecycle\InvalidLifecycleRuleException;
 use App\Service\BucketService;
 use App\Service\LifecycleService;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -12,11 +13,13 @@ class LifecycleServiceTest extends TestCase
 {
     private LifecycleService $lifecycleService;
     private BucketService|MockObject $bucketService;
+    private EntityManagerInterface|MockObject $entityManager;
 
     protected function setUp(): void
     {
         $this->bucketService = $this->createMock(BucketService::class);
-        $this->lifecycleService = new LifecycleService($this->bucketService);
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->lifecycleService = new LifecycleService($this->bucketService, $this->entityManager);
     }
 
     /**

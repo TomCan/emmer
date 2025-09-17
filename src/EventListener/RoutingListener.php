@@ -12,6 +12,7 @@ use App\Controller\Api\GetBucketVersioning;
 use App\Controller\Api\ListMultipartUploads;
 use App\Controller\Api\ListObjectVersions;
 use App\Controller\Api\ListParts;
+use App\Controller\Api\PutBucketLifecycle;
 use App\Controller\Api\PutBucketPolicy;
 use App\Controller\Api\PutBucketVersioning;
 use App\Controller\Api\UploadPart;
@@ -63,6 +64,9 @@ class RoutingListener implements EventSubscriberInterface
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('versioning')) {
                 $request->attributes->set('_controller', PutBucketVersioning::class.'::putBucketVersioning');
+                $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('lifecycle')) {
+                $request->attributes->set('_controller', PutBucketLifecycle::class.'::putBucketLifecycle');
                 $request->attributes->set('bucket', $matches[1]);
             }
         }
