@@ -165,7 +165,7 @@ class LifecycleService
         if (!isset($rule->Status) || ('Enabled' !== (string) $rule->Status && 'Disabled' !== (string) $rule->Status)) {
             throw new InvalidLifecycleRuleException('Invalid Status in Rule element');
         } else {
-            $parsedRule['status'] = (string) ($rule->Status);
+            $parsedRule['status'] = (string) $rule->Status;
         }
 
         if (isset($rule->ID)) {
@@ -326,7 +326,7 @@ class LifecycleService
             }
 
             // only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported
-            if (count(array_filter($parsedFilter)) > 1 || count(array_filter($parsedFilter)) == 0) {
+            if (count(array_filter($parsedFilter)) > 1 || 0 == count(array_filter($parsedFilter))) {
                 throw new InvalidLifecycleRuleException('Only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported');
             }
         }
@@ -370,6 +370,11 @@ class LifecycleService
         }
     }
 
+    /**
+     * @param mixed[] $array
+     *
+     * @return mixed[]
+     */
     public function filterRulesArray(array $array): array
     {
         foreach ($array as $key => &$value) {
@@ -390,6 +395,11 @@ class LifecycleService
         return $array;
     }
 
+    /**
+     * @param mixed[] $parsedRules
+     *
+     * @return mixed[]
+     */
     public function parsedRulesToXmlArray(array $parsedRules): array
     {
         $result = [];
@@ -400,10 +410,15 @@ class LifecycleService
         return $result;
     }
 
-    private function parsedRuleToXmlArray(array $parsedRules): array
+    /**
+     * @param mixed[] $parsedRule
+     *
+     * @return mixed[]
+     */
+    private function parsedRuleToXmlArray(array $parsedRule): array
     {
         $result = [];
-        foreach ($parsedRules as $key => $value) {
+        foreach ($parsedRule as $key => $value) {
             switch ($key) {
                 case 'id':
                     $result['ID'] = $value;
@@ -431,7 +446,7 @@ class LifecycleService
                     break;
                 case 'tags':
                     foreach ($value as $tag) {
-                         $result['#Tag'][] = ['Key' => $tag['key'], 'Value' => $tag['value']];
+                        $result['#Tag'][] = ['Key' => $tag['key'], 'Value' => $tag['value']];
                     }
                     break;
                 case 'object_size_greater':
