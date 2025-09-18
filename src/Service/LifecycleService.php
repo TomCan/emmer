@@ -161,9 +161,11 @@ class LifecycleService
      */
     public function parseLifecycleRule(mixed $rule): array
     {
-        $parsedRule = [];
+        $parsedRule = ['id' => null, 'status' => null, 'filter' => null];
         if (!isset($rule->Status) || ('Enabled' !== (string) $rule->Status && 'Disabled' !== (string) $rule->Status)) {
             throw new InvalidLifecycleRuleException('Invalid Status in Rule element');
+        } else {
+            $parsedRule['status'] = (string) ($rule->Status);
         }
 
         if (isset($rule->ID)) {
@@ -386,5 +388,71 @@ class LifecycleService
         }
 
         return $array;
+    }
+
+    public function parsedRulesToXmlArray(array $parsedRules): array
+    {
+        $result = [];
+        foreach ($parsedRules as $parsedRule) {
+            $result[] = $this->parsedRuleToXmlArray($parsedRule);
+        }
+
+        return $result;
+    }
+
+    private function parsedRuleToXmlArray(array $parsedRules): array
+    {
+        $result = [];
+        foreach ($parsedRules as $key => $value) {
+            switch ($key) {
+                case 'id':
+                    $result['ID'] = $value;
+                    break;
+                case 'abortmpu':
+                    $result['AbortIncompleteMultipartUpload']['DaysAfterInitiation'] = $value;
+                    break;
+                case 'expiration_date':
+                    $result['Expiration']['Date'] = $value->format(\DateTime::ATOM);
+                    break;
+                case 'expiration_days':
+                    $result['Expiration']['Days'] = $value;
+                    break;
+                case 'expiration_delete_marker':
+                    $result['Expiration']['ExpiredObjectDeleteMarker'] = $value ? 'true' : 'false';
+                    break;
+                case 'noncurrent_days':
+                    $result['NoncurrentVersionExpiration']['NoncurrentDays'] = $value;
+                    break;
+                case 'noncurrent_newer_versions':
+                    $result['NoncurrentVersionExpiration']['NewerNoncurrentVersions'] = $value;
+                    break;
+                case 'tag':
+                    $result['#Tag'][] = ['Key' => $value['key'], 'Value' => $value['value']];
+                    break;
+                case 'tags':
+                    foreach ($value as $tag) {
+                         $result['#Tag'][] = ['Key' => $tag['key'], 'Value' => $tag['value']];
+                    }
+                    break;
+                case 'object_size_greater':
+                    $result['ObjectSizeGreaterThan'] = $value;
+                    break;
+                case 'object_size_less':
+                    $result['ObjectSizeLessThan'] = $value;
+                    break;
+                case 'and':
+                case 'filter':
+                    $result[ucfirst($key)] = $this->parsedRuleToXmlArray($value);
+                    break;
+                case 'status':
+                case 'prefix':
+                case 'key':
+                case 'value':
+                    $result[ucfirst($key)] = $value;
+                    break;
+            }
+        }
+
+        return $result;
     }
 }

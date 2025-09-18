@@ -13,10 +13,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-class PutBucketLifecycle extends AbstractController
+class PutBucketLifecycleConfiguration extends AbstractController
 {
     // Routing handled by RouteListener
-    public function putBucketLifecycle(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, LifecycleService $lifecycleService, Request $request, string $bucket): Response
+    public function putBucketLifecycleConfiguration(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, LifecycleService $lifecycleService, Request $request, string $bucket): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {

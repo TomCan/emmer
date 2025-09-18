@@ -8,13 +8,13 @@ use App\Controller\Api\CreateMultipartUpload;
 use App\Controller\Api\DeleteBucketLifecycle;
 use App\Controller\Api\DeleteBucketPolicy;
 use App\Controller\Api\DeleteObjects;
-use App\Controller\Api\GetBucketLifecycle;
+use App\Controller\Api\GetBucketLifecycleConfiguration;
 use App\Controller\Api\GetBucketPolicy;
 use App\Controller\Api\GetBucketVersioning;
 use App\Controller\Api\ListMultipartUploads;
 use App\Controller\Api\ListObjectVersions;
 use App\Controller\Api\ListParts;
-use App\Controller\Api\PutBucketLifecycle;
+use App\Controller\Api\PutBucketLifecycleConfiguration;
 use App\Controller\Api\PutBucketPolicy;
 use App\Controller\Api\PutBucketVersioning;
 use App\Controller\Api\UploadPart;
@@ -40,7 +40,7 @@ class RoutingListener implements EventSubscriberInterface
                 $request->attributes->set('_controller', GetBucketPolicy::class.'::getBucketPolicy');
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('lifecycle')) {
-                $request->attributes->set('_controller', GetBucketLifecycle::class.'::getBucketLifecycle');
+                $request->attributes->set('_controller', GetBucketLifecycleConfiguration::class.'::getBucketLifecycleConfiguration');
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('versioning')) {
                 $request->attributes->set('_controller', GetBucketVersioning::class.'::getBucketVersioning');
@@ -71,7 +71,7 @@ class RoutingListener implements EventSubscriberInterface
                 $request->attributes->set('_controller', PutBucketVersioning::class.'::putBucketVersioning');
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('lifecycle')) {
-                $request->attributes->set('_controller', PutBucketLifecycle::class.'::putBucketLifecycle');
+                $request->attributes->set('_controller', PutBucketLifecycleConfiguration::class.'::putBucketLifecycleConfiguration');
                 $request->attributes->set('bucket', $matches[1]);
             }
         }

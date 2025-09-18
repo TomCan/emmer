@@ -12,10 +12,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-class GetBucketLifecycle extends AbstractController
+class GetBucketLifecycleConfiguration extends AbstractController
 {
     // Routing handled by RouteListener
-    public function getBucketLifecycle(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, LifecycleService $lifecycleService, Request $request, string $bucket): Response
+    public function getBucketLifecycleConfiguration(AuthorizationService $authorizationService, ResponseService $responseService, BucketService $bucketService, LifecycleService $lifecycleService, Request $request, string $bucket): Response
     {
         $bucket = $bucketService->getBucket($bucket);
         if (!$bucket) {
@@ -49,12 +49,13 @@ class GetBucketLifecycle extends AbstractController
             }
 
             $filteredRules = $lifecycleService->filterRulesArray($rules);
+            $xmlRules = $lifecycleService->parsedRulesToXmlArray($filteredRules);
 
             // valid and saved
             return $responseService->createResponse(
                 [
                     'LifecycleConfiguration' => [
-                        '#Rule' => $filteredRules,
+                        '#Rule' => $xmlRules,
                     ],
                 ]
             );
