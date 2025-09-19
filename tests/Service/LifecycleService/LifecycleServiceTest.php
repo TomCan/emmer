@@ -2,6 +2,7 @@
 
 namespace App\Tests\Service;
 
+use App\Domain\Lifecycle\ParsedLifecycleRule;
 use App\Exception\Lifecycle\InvalidLifecycleRuleException;
 use App\Service\BucketService;
 use App\Service\LifecycleService;
@@ -52,14 +53,18 @@ XML;
         $this->assertCount(2, $result);
 
         // First rule
-        $this->assertEquals('rule1', $result[0]['id']);
-        $this->assertEquals(30, $result[0]['expiration_days']);
-        $this->assertNull($result[0]['abortmpu']);
+        $firstRule = $result[0];
+        $this->assertEquals('rule1', $firstRule->getId());
+        $this->assertEquals('Enabled', $firstRule->getStatus());
+        $this->assertEquals(30, $firstRule->getExpirationDays());
+        $this->assertNull($firstRule->getAbortIncompleteMultipartUploadDays());
 
         // Second rule
-        $this->assertEquals('rule2', $result[1]['id']);
-        $this->assertEquals(7, $result[1]['abortmpu']);
-        $this->assertNull($result[1]['expiration_days']);
+        $secondRule = $result[1];
+        $this->assertEquals('rule2', $secondRule->getId());
+        $this->assertEquals('Disabled', $secondRule->getStatus());
+        $this->assertEquals(7, $secondRule->getAbortIncompleteMultipartUploadDays());
+        $this->assertNull($secondRule->getExpirationDays());
     }
 
     /**
@@ -83,8 +88,11 @@ XML;
         $result = $this->lifecycleService->parseLifecycleRules($xml);
 
         $this->assertCount(1, $result);
-        $this->assertEquals('single-rule', $result[0]['id']);
-        $this->assertEquals(365, $result[0]['noncurrent_days']);
+
+        $rule = $result[0];
+        $this->assertEquals('single-rule', $rule->getId());
+        $this->assertEquals('Enabled', $rule->getStatus());
+        $this->assertEquals(365, $rule->getNoncurrentVersionExpirationDays());
     }
 
     /**
@@ -136,13 +144,15 @@ XML;
         $rule = new \SimpleXMLElement($xml);
         $result = $this->lifecycleService->parseLifecycleRule($rule);
 
-        $this->assertEquals('comprehensive-rule', $result['id']);
-        $this->assertEquals(5, $result['abortmpu']);
-        $this->assertEquals(90, $result['expiration_days']);
-        $this->assertTrue($result['expiration_delete_marker']);
-        $this->assertEquals(180, $result['noncurrent_days']);
-        $this->assertEquals(5, $result['noncurrent_newer_versions']);
-        $this->assertEquals('documents/', $result['filter']['prefix']);
+        $this->assertInstanceOf(ParsedLifecycleRule::class, $result);
+        $this->assertEquals('comprehensive-rule', $result->getId());
+        $this->assertEquals('Enabled', $result->getStatus());
+        $this->assertEquals(5, $result->getAbortIncompleteMultipartUploadDays());
+        $this->assertEquals(90, $result->getExpirationDays());
+        $this->assertTrue($result->getExpiredObjectDeleteMarker());
+        $this->assertEquals(180, $result->getNoncurrentVersionExpirationDays());
+        $this->assertEquals(5, $result->getNoncurrentVersionNewerVersions());
+        $this->assertEquals('documents/', $result->getFilterPrefix());
     }
 
     /**
@@ -159,14 +169,16 @@ XML;
         $rule = new \SimpleXMLElement($xml);
         $result = $this->lifecycleService->parseLifecycleRule($rule);
 
-        $this->assertNull($result['id']);
-        $this->assertNull($result['abortmpu']);
-        $this->assertNull($result['expiration_days']);
-        $this->assertNull($result['expiration_date']);
-        $this->assertNull($result['expiration_delete_marker']);
-        $this->assertNull($result['noncurrent_days']);
-        $this->assertNull($result['noncurrent_newer_versions']);
-        $this->assertNull($result['filter']);
+        $this->assertInstanceOf(ParsedLifecycleRule::class, $result);
+        $this->assertNull($result->getId());
+        $this->assertEquals('Disabled', $result->getStatus());
+        $this->assertNull($result->getAbortIncompleteMultipartUploadDays());
+        $this->assertNull($result->getExpirationDays());
+        $this->assertNull($result->getExpirationDate());
+        $this->assertNull($result->getExpiredObjectDeleteMarker());
+        $this->assertNull($result->getNoncurrentVersionExpirationDays());
+        $this->assertNull($result->getNoncurrentVersionNewerVersions());
+        $this->assertNull($result->getFilterPrefix());
     }
 
     /**
@@ -186,9 +198,10 @@ XML;
         $rule = new \SimpleXMLElement($xml);
         $result = $this->lifecycleService->parseLifecycleRule($rule);
 
-        $this->assertInstanceOf(\DateTime::class, $result['expiration_date']);
-        $this->assertEquals('2024-12-31', $result['expiration_date']->format('Y-m-d'));
-        $this->assertNull($result['expiration_days']);
+        $this->assertInstanceOf(ParsedLifecycleRule::class, $result);
+        $this->assertInstanceOf(\DateTime::class, $result->getExpirationDate());
+        $this->assertEquals('2024-12-31', $result->getExpirationDate()->format('Y-m-d'));
+        $this->assertNull($result->getExpirationDays());
     }
 
     /**
@@ -371,13 +384,14 @@ XML;
 XML;
 
         $filter = new \SimpleXMLElement($xml);
-        $result = $this->lifecycleService->parseLifecycleFilter($filter);
+        $parsedRule = new ParsedLifecycleRule();
+        $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter);
 
-        $this->assertEquals('logs/', $result['prefix']);
-        $this->assertNull($result['size_greater']);
-        $this->assertNull($result['size_less']);
-        $this->assertNull($result['tag']);
-        $this->assertNull($result['and']);
+        $this->assertEquals('logs/', $parsedRule->getFilterPrefix());
+        $this->assertNull($parsedRule->getFilterSizeGreaterThan());
+        $this->assertNull($parsedRule->getFilterSizeLessThan());
+        $this->assertNull($parsedRule->getFilterTag());
+        $this->assertFalse($parsedRule->hasAnd());
     }
 
     /**
@@ -393,11 +407,12 @@ XML;
 XML;
 
         $filter = new \SimpleXMLElement($xml);
+        $parsedRule = new ParsedLifecycleRule();
 
         $this->expectException(InvalidLifecycleRuleException::class);
         $this->expectExceptionMessage('Only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported');
 
-        $this->lifecycleService->parseLifecycleFilter($filter);
+        $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter);
     }
 
     /**
@@ -415,11 +430,12 @@ XML;
 XML;
 
         $filter = new \SimpleXMLElement($xml);
-        $result = $this->lifecycleService->parseLifecycleFilter($filter);
+        $parsedRule = new ParsedLifecycleRule();
+        $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter);
 
-        $this->assertNull($result['prefix']);
-        $this->assertEquals(['key' => 'Environment', 'value' => 'Production'], $result['tag']);
-        $this->assertNull($result['and']);
+        $this->assertNull($parsedRule->getFilterPrefix());
+        $this->assertEquals(['key' => 'Environment', 'value' => 'Production'], $parsedRule->getFilterTag());
+        $this->assertFalse($parsedRule->hasAnd());
     }
 
     /**
@@ -445,19 +461,19 @@ XML;
 XML;
 
         $filter = new \SimpleXMLElement($xml);
-        $result = $this->lifecycleService->parseLifecycleFilter($filter);
+        $parsedRule = new ParsedLifecycleRule();
+        $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter);
 
-        $this->assertNull($result['prefix']);
-        $this->assertNull($result['tag']);
-        $this->assertIsArray($result['and']);
+        $this->assertNull($parsedRule->getFilterPrefix());
+        $this->assertNull($parsedRule->getFilterTag());
+        $this->assertTrue($parsedRule->hasAnd());
 
-        $andFilter = $result['and'];
-        $this->assertEquals('documents/', $andFilter['prefix']);
-        $this->assertEquals(1000, $andFilter['size_greater']);
-        $this->assertIsArray($andFilter['tags']);
-        $this->assertCount(2, $andFilter['tags']);
-        $this->assertEquals(['key' => 'Department', 'value' => 'Finance'], $andFilter['tags'][0]);
-        $this->assertEquals(['key' => 'Project', 'value' => 'Archive'], $andFilter['tags'][1]);
+        $this->assertEquals('documents/', $parsedRule->getFilterAndPrefix());
+        $this->assertEquals(1000, $parsedRule->getFilterAndSizeGreaterThan());
+        $this->assertIsArray($parsedRule->getFilterAndTags());
+        $this->assertCount(2, $parsedRule->getFilterAndTags());
+        $this->assertEquals(['key' => 'Department', 'value' => 'Finance'], $parsedRule->getFilterAndTags()[0]);
+        $this->assertEquals(['key' => 'Project', 'value' => 'Archive'], $parsedRule->getFilterAndTags()[1]);
     }
 
     /**
@@ -477,17 +493,19 @@ XML;
 XML;
 
         $filter = new \SimpleXMLElement($xml);
-        $result = $this->lifecycleService->parseLifecycleFilter($filter, true);
+        $parsedRule = new ParsedLifecycleRule();
+        $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter, true);
 
-        $this->assertEquals('temp/', $result['prefix']);
-        $this->assertNull($result['size_greater']);
-        $this->assertEquals(5000, $result['size_less']);
-        $this->assertIsArray($result['tags']);
-        $this->assertCount(1, $result['tags']);
-        $this->assertEquals(['key' => 'Status', 'value' => 'Temporary'], $result['tags'][0]);
-        // In And context, 'tag' and 'and' should not be set
-        $this->assertArrayNotHasKey('tag', $result);
-        $this->assertArrayNotHasKey('and', $result);
+        $this->assertEquals('temp/', $parsedRule->getFilterAndPrefix());
+        $this->assertNull($parsedRule->getFilterAndSizeGreaterThan());
+        $this->assertEquals(5000, $parsedRule->getFilterAndSizeLessThan());
+        $this->assertIsArray($parsedRule->getFilterAndTags());
+        $this->assertCount(1, $parsedRule->getFilterAndTags());
+        $this->assertEquals(['key' => 'Status', 'value' => 'Temporary'], $parsedRule->getFilterAndTags()[0]);
+
+        // In And context, normal filter properties should not be set
+        $this->assertNull($parsedRule->getFilterPrefix());
+        $this->assertNull($parsedRule->getFilterTag());
     }
 
     /**
@@ -501,13 +519,14 @@ XML;
 XML;
 
         $filter = new \SimpleXMLElement($xml);
-        $result = $this->lifecycleService->parseLifecycleFilter($filter);
+        $parsedRule = new ParsedLifecycleRule();
+        $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter);
 
-        $this->assertNull($result['prefix']);
-        $this->assertNull($result['size_greater']);
-        $this->assertNull($result['size_less']);
-        $this->assertNull($result['tag']);
-        $this->assertNull($result['and']);
+        $this->assertNull($parsedRule->getFilterPrefix());
+        $this->assertNull($parsedRule->getFilterSizeGreaterThan());
+        $this->assertNull($parsedRule->getFilterSizeLessThan());
+        $this->assertNull($parsedRule->getFilterTag());
+        $this->assertFalse($parsedRule->hasAnd());
     }
 
     /**
@@ -526,10 +545,11 @@ XML;
 XML;
 
         $filter = new \SimpleXMLElement($xml);
+        $parsedRule = new ParsedLifecycleRule();
 
         $this->expectException(InvalidLifecycleRuleException::class);
         $this->expectExceptionMessage('Only one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan, And is supported');
 
-        $this->lifecycleService->parseLifecycleFilter($filter);
+        $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter);
     }
 }
