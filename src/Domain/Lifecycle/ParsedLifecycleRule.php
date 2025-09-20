@@ -12,6 +12,14 @@ class ParsedLifecycleRule
     private ?bool $expiredObjectDeleteMarker = null;
     private ?int $noncurrentVersionExpirationDays = null;
     private ?int $noncurrentVersionNewerVersions = null;
+    /**
+     * @var array<array{'NewerNoncurrentVersions'?: int, 'NoncurrentDays'?: int, 'StorageClass'?: string}>|null
+     */
+    private ?array $noncurrentVersionTransitions = null;
+    /**
+     * @var array<array{'Date'?: \DateTime, 'Days'?: int, 'StorageClass'?: string}>|null
+     */
+    private ?array $transitions = null;
     private ?string $filterPrefix = null;
     private ?int $filterSizeGreaterThan = null;
     private ?int $filterSizeLessThan = null;
@@ -105,6 +113,38 @@ class ParsedLifecycleRule
     public function setNoncurrentVersionNewerVersions(?int $noncurrentVersionNewerVersions): void
     {
         $this->noncurrentVersionNewerVersions = $noncurrentVersionNewerVersions;
+    }
+
+    /**
+     * @return array<array{'NewerNoncurrentVersions'?: int, 'NoncurrentDays'?: int, 'StorageClass'?: string}>|null
+     */
+    public function getNoncurrentVersionTransitions(): ?array
+    {
+        return $this->noncurrentVersionTransitions;
+    }
+
+    /**
+     * @param array<array{'NewerNoncurrentVersions'?: int, 'NoncurrentDays'?: int, 'StorageClass'?: string}>|null $noncurrentVersionTransitions
+     */
+    public function setNoncurrentVersionTransitions(?array $noncurrentVersionTransitions): void
+    {
+        $this->noncurrentVersionTransitions = $noncurrentVersionTransitions;
+    }
+
+    /**
+     * @return array<array{'Date'?: \DateTime, 'Days'?: int, 'StorageClass'?: string}>|null
+     */
+    public function getTransitions(): ?array
+    {
+        return $this->transitions;
+    }
+
+    /**
+     * @param array<array{'Date'?: \DateTime, 'Days'?: int, 'StorageClass'?: string}>|null $transitions
+     */
+    public function setTransitions(?array $transitions): void
+    {
+        $this->transitions = $transitions;
     }
 
     public function getFilterPrefix(): ?string

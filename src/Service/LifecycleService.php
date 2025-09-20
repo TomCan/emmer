@@ -245,15 +245,70 @@ class LifecycleService
             }
         }
 
-        /*
-         * Not supported yet, ignore for now
-         *   NoncurrentVersionTransitions
-         *   Transitions
-         */
-
         // Filters
         if (isset($rule->Filter)) {
             $this->parseLifecycleFilter($parsedRule, $rule->Filter, false);
+        }
+
+        /*
+         * Not supported yet, but parse anyway
+         */
+
+        if (isset($rule->NoncurrentVersionTransition)) {
+            $transitions = [];
+            foreach ($rule->NoncurrentVersionTransition as $transition) {
+                $trans = [];
+                if (isset($transition->NewerNoncurrentVersions)) {
+                    $versions = (int) $transition->NewerNoncurrentVersions;
+                    if ($versions > 0 && $versions < 100) {
+                        $trans['NewerNoncurrentVersions'] = $versions;
+                    } else {
+                        throw new InvalidLifecycleRuleException('Invalid NewerNoncurrentVersions in NoncurrentVersionTransition element');
+                    }
+                }
+                if (isset($transition->NoncurrentDays)) {
+                    $days = (int) $transition->NoncurrentDays;
+                    if ($days > 0) {
+                        $trans['NoncurrentDays'] = $days;
+                    } else {
+                        throw new InvalidLifecycleRuleException('Invalid NoncurrentDays in NoncurrentVersionTransition element');
+                    }
+                }
+                if (isset($transition->StorageClass)) {
+                    $trans['StorageClass'] = (string) $transition->StorageClass;
+                }
+
+                $transitions[] = $trans;
+            }
+            $parsedRule->setNoncurrentVersionTransitions($transitions);
+        }
+
+        if (isset($rule->Transition)) {
+            $transitions = [];
+            foreach ($rule->Transition as $transition) {
+                $trans = [];
+                if (isset($transition->Date)) {
+                    try {
+                        $trans['Date'] = new \DateTime($transition->Date, new \DateTimeZone('UTC'));
+                    } catch (\Exception $e) {
+                        throw new InvalidLifecycleRuleException('Invalid Date in Transition element');
+                    }
+                }
+                if (isset($transition->Days)) {
+                    $days = (int) $transition->Days;
+                    if ($days > 0) {
+                        $trans['Days'] = $days;
+                    } else {
+                        throw new InvalidLifecycleRuleException('Invalid Days in Transition element');
+                    }
+                }
+                if (isset($transition->StorageClass)) {
+                    $trans['StorageClass'] = (string) $transition->StorageClass;
+                }
+
+                $transitions[] = $trans;
+            }
+            $parsedRule->setTransitions($transitions);
         }
 
         return $parsedRule;
@@ -392,6 +447,8 @@ class LifecycleService
                         '#Tag' => $parsedRule->getFilterAndTags(),
                     ],
                 ],
+                '#NoncurrentVersionTransition' => $parsedRule->getNoncurrentVersionTransitions(),
+                '#Transition' => $parsedRule->getTransitions(),
             ];
 
             // filter out null values of each subarray
