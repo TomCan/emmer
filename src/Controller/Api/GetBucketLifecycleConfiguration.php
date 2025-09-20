@@ -48,8 +48,7 @@ class GetBucketLifecycleConfiguration extends AbstractController
                 $rules = array_merge($rules, $lifecycleService->parseLifecycleRules($rule->getRules()));
             }
 
-            $filteredRules = $lifecycleService->filterRulesArray($rules);
-            $xmlRules = $lifecycleService->parsedRulesToXmlArray($filteredRules);
+            $xmlRules = $lifecycleService->parsedRulesToXmlArray($rules);
 
             // valid and saved
             return $responseService->createResponse(

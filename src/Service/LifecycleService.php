@@ -291,14 +291,14 @@ class LifecycleService
             if (isset($filter->Tag)) {
                 $tags = [];
                 foreach ($filter->Tag as $tag) {
-                    $tags[] = ['key' => (string) $tag->Key, 'value' => (string) $tag->Value];
+                    $tags[] = ['Key' => (string) $tag->Key, 'Value' => (string) $tag->Value];
                 }
                 $parsedRule->setFilterAndTags($tags);
             }
         } else {
             // we are in a rule, Tag can be a single tag
             if (isset($filter->Tag->Key) && isset($filter->Tag->Value)) {
-                $tag = ['key' => (string) $filter->Tag->Key, 'value' => (string) $filter->Tag->Value];
+                $tag = ['Key' => (string) $filter->Tag->Key, 'Value' => (string) $filter->Tag->Value];
                 $parsedRule->setFilterTag($tag);
             }
 
@@ -356,103 +356,55 @@ class LifecycleService
     }
 
     /**
-     * @param mixed[] $array
-     *
-     * @return mixed[]
-     */
-    public function filterRulesArray(array $array): array
-    {
-        foreach ($array as $key => &$value) {
-            if (is_array($value)) {
-                $value = $this->filterRulesArray($value);
-                // Remove empty arrays after filtering
-                if (empty($value)) {
-                    unset($array[$key]);
-                }
-            } else {
-                // Remove null values
-                if (null === $value) {
-                    unset($array[$key]);
-                }
-            }
-        }
-
-        return $array;
-    }
-
-    /**
-     * @param mixed[] $parsedRules
+     * @param ParsedLifecycleRule[] $parsedRules
      *
      * @return mixed[]
      */
     public function parsedRulesToXmlArray(array $parsedRules): array
     {
-        $result = [];
+        $results = [];
         foreach ($parsedRules as $parsedRule) {
-            $result[] = $this->parsedRuleToXmlArray($parsedRule);
+            // compose full array
+            $result = [
+                'ID' => $parsedRule->getId(),
+                'Status' => $parsedRule->getStatus(),
+                'AbortIncompleteMultipartUpload' => [
+                    'DaysAfterInitiation' => $parsedRule->getAbortIncompleteMultipartUploadDays(),
+                ],
+                'Expiration' => [
+                    'Date' => $parsedRule->getExpirationDate() ? $parsedRule->getExpirationDate()->format(\DateTime::ATOM) : null,
+                    'Days' => $parsedRule->getExpirationDays(),
+                    'ExpiredObjectDeleteMarker' => null == $parsedRule->getExpiredObjectDeleteMarker() ? null : ($parsedRule->getExpiredObjectDeleteMarker() ? 'true' : 'false'),
+                ],
+                'NoncurrentVersionExpiration' => [
+                    'NoncurrentDays' => $parsedRule->getNoncurrentVersionExpirationDays(),
+                    'NewerNoncurrentVersions' => $parsedRule->getNoncurrentVersionNewerVersions(),
+                ],
+                'Filter' => [
+                    'Prefix' => $parsedRule->getFilterPrefix(),
+                    'ObjectSizeGreaterThan' => $parsedRule->getFilterSizeGreaterThan(),
+                    'ObjectSizeLessThan' => $parsedRule->getFilterSizeLessThan(),
+                    'Tag' => $parsedRule->getFilterTag(),
+                    'And' => [
+                        'Prefix' => $parsedRule->getFilterAndPrefix(),
+                        'ObjectSizeGreaterThan' => $parsedRule->getFilterAndSizeGreaterThan(),
+                        'ObjectSizeLessThan' => $parsedRule->getFilterAndSizeLessThan(),
+                        '#Tag' => $parsedRule->getFilterAndTags(),
+                    ],
+                ],
+            ];
+
+            // filter out null values of each subarray
+            $result['AbortIncompleteMultipartUpload'] = array_filter($result['AbortIncompleteMultipartUpload']);
+            $result['Expiration'] = array_filter($result['Expiration']);
+            $result['NoncurrentVersionExpiration'] = array_filter($result['NoncurrentVersionExpiration']);
+            $result['Filter']['And'] = array_filter($result['Filter']['And']);
+            $result['Filter'] = array_filter($result['Filter']);
+            $result = array_filter($result);
+
+            $results[] = $result;
         }
 
-        return $result;
-    }
-
-    /**
-     * @param mixed[] $parsedRule
-     *
-     * @return mixed[]
-     */
-    private function parsedRuleToXmlArray(array $parsedRule): array
-    {
-        $result = [];
-        foreach ($parsedRule as $key => $value) {
-            switch ($key) {
-                case 'id':
-                    $result['ID'] = $value;
-                    break;
-                case 'abortmpu':
-                    $result['AbortIncompleteMultipartUpload']['DaysAfterInitiation'] = $value;
-                    break;
-                case 'expiration_date':
-                    $result['Expiration']['Date'] = $value->format(\DateTime::ATOM);
-                    break;
-                case 'expiration_days':
-                    $result['Expiration']['Days'] = $value;
-                    break;
-                case 'expiration_delete_marker':
-                    $result['Expiration']['ExpiredObjectDeleteMarker'] = $value ? 'true' : 'false';
-                    break;
-                case 'noncurrent_days':
-                    $result['NoncurrentVersionExpiration']['NoncurrentDays'] = $value;
-                    break;
-                case 'noncurrent_newer_versions':
-                    $result['NoncurrentVersionExpiration']['NewerNoncurrentVersions'] = $value;
-                    break;
-                case 'tag':
-                    $result['#Tag'][] = ['Key' => $value['key'], 'Value' => $value['value']];
-                    break;
-                case 'tags':
-                    foreach ($value as $tag) {
-                        $result['#Tag'][] = ['Key' => $tag['key'], 'Value' => $tag['value']];
-                    }
-                    break;
-                case 'object_size_greater':
-                    $result['ObjectSizeGreaterThan'] = $value;
-                    break;
-                case 'object_size_less':
-                    $result['ObjectSizeLessThan'] = $value;
-                    break;
-                case 'and':
-                case 'filter':
-                    $result[ucfirst($key)] = $this->parsedRuleToXmlArray($value);
-                    break;
-                case 'status':
-                case 'prefix':
-                case 'key':
-                case 'value':
-                    $result[ucfirst($key)] = $value;
-                    break;
-            }
-        }
-
-        return $result;
+        return $results;
     }
 }
