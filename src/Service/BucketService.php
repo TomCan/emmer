@@ -363,7 +363,7 @@ class BucketService
             if ($oldFile->getBucket()->isVersioned()) {
                 // versioned bucket, make old version inactive
                 $oldFile->setCurrentVersion(false);
-                $oldFile->setMtime(new \DateTime());
+                $oldFile->setNctime(new \DateTime());
                 $this->entityManager->persist($oldFile);
             } else {
                 // unversioned bucket, delete old version
