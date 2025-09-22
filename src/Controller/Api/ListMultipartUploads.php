@@ -84,7 +84,7 @@ class ListMultipartUploads extends AbstractController
             foreach ($objectList->getFiles() as $file) {
                 $item = [
                     'Key' => ('url' == $encodingType) ? urlencode($file->getName()) : $file->getName(),
-                    'Initiated' => $file->getMtime()->format('c'),
+                    'Initiated' => $file->getCtime()->format('c'),
                     'StorageClass' => 'STANDARD',
                     'Owner' => [
                         'ID' => $bucket->getOwner()->getIdentifier(),
