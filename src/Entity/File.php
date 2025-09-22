@@ -29,6 +29,9 @@ class File
     private ?\DateTime $mtime = null;
 
     #[ORM\Column]
+    private ?\DateTime $nctime = null;
+
+    #[ORM\Column]
     private ?string $etag = null;
 
     #[ORM\ManyToOne]
@@ -120,6 +123,18 @@ class File
     public function setMtime(\DateTime $mtime): static
     {
         $this->mtime = $mtime;
+
+        return $this;
+    }
+
+    public function getNctime(): ?\DateTime
+    {
+        return $this->nctime;
+    }
+
+    public function setNctime(\DateTime $nctime): static
+    {
+        $this->nctime = $nctime;
 
         return $this;
     }
