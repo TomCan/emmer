@@ -239,6 +239,15 @@ class ParsedLifecycleRule
         $this->filterAndTags = $filterAndTags;
     }
 
+    public function hasFilter(): bool
+    {
+        return null !== $this->filterPrefix
+            || null !== $this->filterSizeGreaterThan
+            || null !== $this->filterSizeLessThan
+            || null !== $this->filterTag
+            || $this->hasAnd();
+    }
+
     public function hasAnd(): bool
     {
         return null !== $this->filterAndPrefix
