@@ -23,6 +23,9 @@ class File
     private ?int $size = null;
 
     #[ORM\Column]
+    private ?\DateTime $ctime = null;
+
+    #[ORM\Column]
     private ?\DateTime $mtime = null;
 
     #[ORM\Column]
@@ -42,6 +45,9 @@ class File
     #[ORM\Column]
     private bool $currentVersion = false;
 
+    #[ORM\Column]
+    private int $newerNoncurrentVersions = 0;
+
     #[ORM\Column(length: 255)]
     private ?string $contentType = null;
 
@@ -51,7 +57,7 @@ class File
     #[ORM\Column]
     private bool $deleteMarker = false;
 
-    public function __construct(Bucket $bucket, string $name, ?string $version = null, string $contentType = '', int $size = 0, ?\DateTime $mtime = new \DateTime(), string $etag = '')
+    public function __construct(Bucket $bucket, string $name, ?string $version = null, string $contentType = '', int $size = 0, ?\DateTime $ctime = new \DateTime(), string $etag = '')
     {
         $this->fileparts = new ArrayCollection();
 
@@ -60,7 +66,8 @@ class File
         $this->version = $version;
         $this->contentType = $contentType;
         $this->size = $size;
-        $this->mtime = $mtime;
+        $this->ctime = $ctime;
+        $this->mtime = $ctime;
         $this->etag = $etag;
     }
 
@@ -89,6 +96,18 @@ class File
     public function setSize(int $size): static
     {
         $this->size = $size;
+
+        return $this;
+    }
+
+    public function getCtime(): ?\DateTime
+    {
+        return $this->ctime;
+    }
+
+    public function setCtime(\DateTime $ctime): static
+    {
+        $this->ctime = $ctime;
 
         return $this;
     }
@@ -177,6 +196,16 @@ class File
     public function setCurrentVersion(bool $currentVersion): void
     {
         $this->currentVersion = $currentVersion;
+    }
+
+    public function getNewerNoncurrentVersions(): int
+    {
+        return $this->newerNoncurrentVersions;
+    }
+
+    public function setNewerNoncurrentVersions(int $newerNoncurrentVersions): void
+    {
+        $this->newerNoncurrentVersions = $newerNoncurrentVersions;
     }
 
     public function getContentType(): ?string
