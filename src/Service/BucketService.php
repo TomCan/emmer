@@ -332,6 +332,8 @@ class BucketService
         if ($flush) {
             $this->entityManager->flush();
         }
+
+        $this->updateNewerNoncurrentVersions($file, $flush);
     }
 
     public function saveFileAndParts(File $file, bool $flush = false): void
@@ -361,11 +363,39 @@ class BucketService
             if ($oldFile->getBucket()->isVersioned()) {
                 // versioned bucket, make old version inactive
                 $oldFile->setCurrentVersion(false);
+                $oldFile->setMtime(new \DateTime());
                 $this->entityManager->persist($oldFile);
             } else {
                 // unversioned bucket, delete old version
                 $this->deleteFileVersion($oldFile, true, false);
             }
+        }
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+
+        $this->updateNewerNoncurrentVersions($newFile, $flush);
+    }
+
+    public function updateNewerNoncurrentVersions(File $file, bool $flush): void
+    {
+        $versions = $this->fileRepository->findBy(
+            [
+                'bucket' => $file->getBucket(),
+                'name' => $file->getName(),
+                'currentVersion' => false,
+            ],
+            [
+                'mtime' => 'DESC',
+            ]
+        );
+
+        $count = 0;
+        foreach ($versions as $version) {
+            $version->setNewerNoncurrentVersions($count);
+            $this->entityManager->persist($version);
+            ++$count;
         }
 
         if ($flush) {
