@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Domain\Lifecycle\ParsedLifecycleRule;
 use App\Entity\Bucket;
 use App\Entity\File;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -137,5 +138,116 @@ class FileRepository extends ServiceEntityRepository
         }
 
         return $qb;
+    }
+
+    private function applyLifecycleFilter(QueryBuilder $qb, ParsedLifecycleRule $rule): void
+    {
+        if (null != $rule->getFilterPrefix() || null != $rule->getFilterAndPrefix()) {
+            $qb->andWhere('f.name LIKE :prefix')
+                ->setParameter('prefix', ($rule->getFilterPrefix() ?? $rule->getFilterAndPrefix()).'%');
+        }
+        if (null != $rule->getFilterSizeGreaterThan() || null != $rule->getFilterAndSizeGreaterThan()) {
+            $qb->andWhere('f.size > :size')
+                ->setParameter('size', $rule->getFilterSizeGreaterThan() ?? $rule->getFilterAndSizeGreaterThan());
+        }
+        if (null != $rule->getFilterSizeLessThan() || null != $rule->getFilterAndSizeLessThan()) {
+            $qb->andWhere('f.size < :size')
+                ->setParameter('size', $rule->getFilterSizeLessThan() ?? $rule->getFilterAndSizeLessThan());
+        }
+        if (null != $rule->getFilterTag() || null != $rule->getFilterAndTags()) {
+            // tags not supported
+            $tags = $rule->getFilterTag() ? [$rule->getFilterTag()] : $rule->getFilterAndTags();
+        }
+    }
+
+    public function findByLifecycleRuleExpiredMpu(Bucket $bucket, ParsedLifecycleRule $rule): iterable
+    {
+        $qb = $this->createQueryBuilder('f')
+            ->andWhere('f.bucket = :bucket')
+            ->setParameter('bucket', $bucket)
+        ;
+
+        if ($rule->hasFilter()) {
+            $this->applyLifecycleFilter($qb, $rule);
+        }
+
+        if (null != $rule->getAbortIncompleteMultipartUploadDays()) {
+            $qb
+                ->andWhere('f.multipartUploadId IS NOT NULL')
+                ->andWhere('f.ctime < :ctime')
+                ->setParameter('ctime', (new \DateTime())->sub(new \DateInterval('P'.$rule->getAbortIncompleteMultipartUploadDays().'D')));
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
+
+    public function findByLifecycleRuleExpiredCurrentVersions(Bucket $bucket, ParsedLifecycleRule $rule): iterable
+    {
+        $qb = $this->createQueryBuilder('f')
+            ->andWhere('f.bucket = :bucket')
+            ->setParameter('bucket', $bucket)
+        ;
+
+        if ($rule->hasFilter()) {
+            $this->applyLifecycleFilter($qb, $rule);
+        }
+
+        /*
+         * Current versions expiration
+         */
+        $qb->andWhere('f.multipartUploadId IS NULL')
+            ->andWhere('f.currentVersion = 1')
+            ->andWhere('f.deleteMarker = 0');
+
+        if (null != $rule->getExpirationDate()) {
+            if ($rule->getExpirationDate() > new \DateTime()) {
+                // not yet expired, insert false condition to avoid deletion
+                $qb->andWhere('f.id = 0');
+            }
+        } else if (null != $rule->getExpirationDays()) {
+            $qb->andWhere('f.mtime < :expmtime')
+                ->setParameter('expmtime', (new \DateTime())->sub(new \DateInterval('P'.$rule->getExpirationDays().'D')));
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
+
+    public function findByLifecycleRuleExpiredNoncurrentVersions(Bucket $bucket, ParsedLifecycleRule $rule): iterable
+    {
+        $qb = $this->createQueryBuilder('f')
+            ->andWhere('f.bucket = :bucket')
+            ->setParameter('bucket', $bucket)
+        ;
+
+        if ($rule->hasFilter()) {
+            $this->applyLifecycleFilter($qb, $rule);
+        }
+
+        $or = $qb->expr()->orX();
+        $qb->andWhere($or);
+
+        /*
+         * Noncurrent versions expiration
+         */
+        if (null != $rule->getNoncurrentVersionExpirationDays()) {
+            $qb->andWhere('f.multipartUploadId IS NULL')
+                ->andWhere('f.currentVersion = 0')
+                ->andWhere('f.nctime < :nvcexpmtime')
+                ->setParameter('nvcexpmtime', (new \DateTime())->sub(new \DateInterval('P'.$rule->getExpirationDays().'D')));
+
+            if (null != $rule->getNoncurrentVersionNewerVersions()) {
+                // keep at least N noncurrent versions
+                $qb->andWhere('f.newerNoncurrentVersions >= :nvcnewerversions')
+                    ->setParameter('nvcnewerversions', $rule->getNoncurrentVersionNewerVersions());
+            }
+        }
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
     }
 }

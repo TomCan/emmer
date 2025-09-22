@@ -6,6 +6,7 @@ use App\Domain\Lifecycle\ParsedLifecycleRule;
 use App\Entity\Bucket;
 use App\Entity\LifecycleRules;
 use App\Exception\Lifecycle\InvalidLifecycleRuleException;
+use App\Repository\FileRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -13,6 +14,7 @@ class LifecycleService
 {
     public function __construct(
         private BucketService $bucketService,
+        private FileRepository $fileRepository,
         private EntityManagerInterface $entityManager,
     ) {
     }
@@ -463,5 +465,47 @@ class LifecycleService
         }
 
         return $results;
+    }
+
+    public function processBucketLifecycleRules(Bucket $bucket): void
+    {
+        $rules = $bucket->getLifecycleRules();
+        foreach ($rules as $config) {
+            $xml = new \SimpleXMLElement($config->getRules());
+            $parsedRules = $this->parseLifecycleRule($xml);
+            foreach ($parsedRules as $parsedRule) {
+                $this->processBucketLifecycleRule($bucket, $parsedRule);
+            }
+        }
+    }
+
+    private function processBucketLifecycleRule(Bucket $bucket, ParsedLifecycleRule $parsedRule): void
+    {
+        if ('Enabled' == $parsedRule->getStatus()) {
+            // Multipart upload cleanup
+            if (null != $parsedRule->getAbortIncompleteMultipartUploadDays()) {
+                $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
+                foreach ($files as $file) {
+                    $this->bucketService->deleteFileVersion($file, true, true);
+                    $this->entityManager->detach($file);
+                }
+            }
+            // Expire current versions
+            if (null != $parsedRule->getExpirationDate() || null != $parsedRule->getExpirationDays()) {
+                $files = $this->fileRepository->findByLifecycleRuleExpiredCurrentVersions($bucket, $parsedRule);
+                foreach ($files as $file) {
+                    $this->bucketService->deleteFile($file, true, true);
+                    $this->entityManager->detach($file);
+                }
+            }
+            // Expire non-current versions
+            if (null != $parsedRule->getNoncurrentVersionExpirationDays()) {
+                $files = $this->fileRepository->findByLifecycleRuleExpiredNoncurrentVersions($bucket, $parsedRule);
+                foreach ($files as $file) {
+                    $this->bucketService->deleteFileVersion($file, true, true);
+                    $this->entityManager->detach($file);
+                }
+            }
+        }
     }
 }
