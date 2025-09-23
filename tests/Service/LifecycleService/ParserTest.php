@@ -10,7 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-class LifecycleServiceTest extends TestCase
+class ParserTest extends TestCase
 {
     private LifecycleService $lifecycleService;
     private BucketService|MockObject $bucketService;
