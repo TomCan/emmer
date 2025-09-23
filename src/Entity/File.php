@@ -28,7 +28,7 @@ class File
     #[ORM\Column]
     private ?\DateTime $mtime = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?\DateTime $nctime = null;
 
     #[ORM\Column]
