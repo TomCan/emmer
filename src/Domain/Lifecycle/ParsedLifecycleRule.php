@@ -24,14 +24,14 @@ class ParsedLifecycleRule
     private ?int $filterSizeGreaterThan = null;
     private ?int $filterSizeLessThan = null;
     /**
-     * @var array{'key': string, 'value': string}|null
+     * @var array{'Key': string, 'Value': string}|null
      */
     private ?array $filterTag = null;
     private ?string $filterAndPrefix = null;
     private ?int $filterAndSizeGreaterThan = null;
     private ?int $filterAndSizeLessThan = null;
     /**
-     * @var array<array{'key': string, 'value': string}>|null
+     * @var array<array{'Key': string, 'Value': string}>|null
      */
     private ?array $filterAndTags = null;
 
@@ -178,7 +178,7 @@ class ParsedLifecycleRule
     }
 
     /**
-     * @return array{'key': string, 'value': string}|null
+     * @return array{'Key': string, 'Value': string}|null
      */
     public function getFilterTag(): ?array
     {
@@ -186,7 +186,7 @@ class ParsedLifecycleRule
     }
 
     /**
-     * @param array{'key': string, 'value': string}|null $filterTag
+     * @param array{'Key': string, 'Value': string}|null $filterTag
      */
     public function setFilterTag(?array $filterTag): void
     {
@@ -224,7 +224,7 @@ class ParsedLifecycleRule
     }
 
     /**
-     * @return array<array{'key': string, 'value': string}>|null
+     * @return array<array{'Key': string, 'Value': string}>|null
      */
     public function getFilterAndTags(): ?array
     {
@@ -232,7 +232,7 @@ class ParsedLifecycleRule
     }
 
     /**
-     * @param array<array{'key': string, 'value': string}>|null $filterAndTags
+     * @param array<array{'Key': string, 'Value': string}>|null $filterAndTags
      */
     public function setFilterAndTags(?array $filterAndTags): void
     {

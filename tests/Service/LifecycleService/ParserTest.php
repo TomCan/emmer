@@ -4,6 +4,7 @@ namespace App\Tests\Service;
 
 use App\Domain\Lifecycle\ParsedLifecycleRule;
 use App\Exception\Lifecycle\InvalidLifecycleRuleException;
+use App\Repository\FileRepository;
 use App\Service\BucketService;
 use App\Service\LifecycleService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -14,13 +15,15 @@ class ParserTest extends TestCase
 {
     private LifecycleService $lifecycleService;
     private BucketService|MockObject $bucketService;
+    private FileRepository|MockObject $fileRepository;
     private EntityManagerInterface|MockObject $entityManager;
 
     protected function setUp(): void
     {
         $this->bucketService = $this->createMock(BucketService::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->lifecycleService = new LifecycleService($this->bucketService, $this->entityManager);
+        $this->fileRepository = $this->createMock(FileRepository::class);
+        $this->lifecycleService = new LifecycleService($this->bucketService, $this->fileRepository, $this->entityManager);
     }
 
     /**

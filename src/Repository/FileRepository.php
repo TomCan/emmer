@@ -160,6 +160,9 @@ class FileRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * @return File[]
+     */
     public function findByLifecycleRuleExpiredMpu(Bucket $bucket, ParsedLifecycleRule $rule): iterable
     {
         $qb = $this->createQueryBuilder('f')
@@ -175,7 +178,7 @@ class FileRepository extends ServiceEntityRepository
             $qb
                 ->andWhere('f.multipartUploadId IS NOT NULL')
                 ->andWhere('f.ctime < :ctime')
-                ->setParameter('ctime', (new \DateTime())->sub(new \DateInterval('P'.$rule->getAbortIncompleteMultipartUploadDays().'D')));
+                ->setParameter('ctime', (new \DateTime('now', new \DateTimeZone('UTC')))->sub(new \DateInterval('P'.$rule->getAbortIncompleteMultipartUploadDays().'D')));
         }
 
         return $qb
@@ -183,6 +186,9 @@ class FileRepository extends ServiceEntityRepository
             ->toIterable();
     }
 
+    /**
+     * @return File[]
+     */
     public function findByLifecycleRuleExpiredCurrentVersions(Bucket $bucket, ParsedLifecycleRule $rule): iterable
     {
         $qb = $this->createQueryBuilder('f')
@@ -206,7 +212,7 @@ class FileRepository extends ServiceEntityRepository
                 // not yet expired, insert false condition to avoid deletion
                 $qb->andWhere('f.id = 0');
             }
-        } else if (null != $rule->getExpirationDays()) {
+        } elseif (null != $rule->getExpirationDays()) {
             $qb->andWhere('f.mtime < :expmtime')
                 ->setParameter('expmtime', (new \DateTime())->sub(new \DateInterval('P'.$rule->getExpirationDays().'D')));
         }
@@ -216,6 +222,9 @@ class FileRepository extends ServiceEntityRepository
             ->toIterable();
     }
 
+    /**
+     * @return File[]
+     */
     public function findByLifecycleRuleExpiredNoncurrentVersions(Bucket $bucket, ParsedLifecycleRule $rule): iterable
     {
         $qb = $this->createQueryBuilder('f')
@@ -226,9 +235,6 @@ class FileRepository extends ServiceEntityRepository
         if ($rule->hasFilter()) {
             $this->applyLifecycleFilter($qb, $rule);
         }
-
-        $or = $qb->expr()->orX();
-        $qb->andWhere($or);
 
         /*
          * Noncurrent versions expiration

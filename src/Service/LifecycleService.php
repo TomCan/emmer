@@ -431,7 +431,7 @@ class LifecycleService
                 'Expiration' => [
                     'Date' => $parsedRule->getExpirationDate() ? $parsedRule->getExpirationDate()->format(\DateTime::ATOM) : null,
                     'Days' => $parsedRule->getExpirationDays(),
-                    'ExpiredObjectDeleteMarker' => null == $parsedRule->getExpiredObjectDeleteMarker() ? null : ($parsedRule->getExpiredObjectDeleteMarker() ? 'true' : 'false'),
+                    'ExpiredObjectDeleteMarker' => null === $parsedRule->getExpiredObjectDeleteMarker() ? null : ($parsedRule->getExpiredObjectDeleteMarker() ? 'true' : 'false'),
                 ],
                 'NoncurrentVersionExpiration' => [
                     'NoncurrentDays' => $parsedRule->getNoncurrentVersionExpirationDays(),
@@ -472,7 +472,7 @@ class LifecycleService
         $rules = $bucket->getLifecycleRules();
         foreach ($rules as $config) {
             $xml = new \SimpleXMLElement($config->getRules());
-            $parsedRules = $this->parseLifecycleRule($xml);
+            $parsedRules = $this->parseLifecycleRules($xml);
             foreach ($parsedRules as $parsedRule) {
                 $this->processBucketLifecycleRule($bucket, $parsedRule);
             }

@@ -1,11 +1,10 @@
 <?php
+
 // src/DataFixtures/UserFixture.php
 
 namespace App\DataFixtures;
 
-use App\Entity\AccessKey;
 use App\Entity\Bucket;
-use App\Entity\User;
 use App\Service\BucketService;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -14,9 +13,9 @@ class LifecycleTestFixture extends Fixture
 {
     public function __construct(
         private BucketService $bucketService,
-    )
-    {
+    ) {
     }
+
     public function load(ObjectManager $manager): void
     {
         $regularBucket = $this->getReference(BaseTestFixture::REF_REGULAR_BUCKET, Bucket::class);
