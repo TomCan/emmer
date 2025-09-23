@@ -8,7 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: BucketRepository::class)]
-#[ORM\UniqueConstraint(name: 'name_idx', columns: ['name'])]
+#[ORM\UniqueConstraint(name: 'bucket_name_idx', columns: ['name'])]
 class Bucket
 {
     #[ORM\Id]

@@ -6,7 +6,7 @@ use App\Repository\FilepartRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FilepartRepository::class)]
-#[ORM\UniqueConstraint(name: 'name_idx', columns: ['name'])]
+#[ORM\UniqueConstraint(name: 'filepart_name_idx', columns: ['name'])]
 #[ORM\UniqueConstraint(name: 'filepart_idx', columns: ['file_id', 'partnumber'])]
 class Filepart
 {
