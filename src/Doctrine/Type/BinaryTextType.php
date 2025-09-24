@@ -4,7 +4,7 @@ namespace App\Doctrine\Type;
 
 use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Platforms\SqlitePlatform;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\BinaryType;
 
 class BinaryTextType extends BinaryType
@@ -18,7 +18,7 @@ class BinaryTextType extends BinaryType
 
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
     {
-        if ($platform instanceof SqlitePlatform) {
+        if ($platform instanceof SQLitePlatform) {
             return 'CLOB';
         }
 
@@ -32,7 +32,7 @@ class BinaryTextType extends BinaryType
 
     public function getMappedDatabaseTypes(AbstractPlatform $platform): array
     {
-        if ($platform instanceof SqlitePlatform) {
+        if ($platform instanceof SQLitePlatform) {
             return ['clob'];
         }
 
