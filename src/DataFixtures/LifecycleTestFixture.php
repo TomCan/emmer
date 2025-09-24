@@ -32,7 +32,7 @@ class LifecycleTestFixture extends Fixture
                         ++$fileCount;
                         $file = $this->bucketService->createFile($regularBucket, $prefix.'file_'.$expire.'_'.$size);
                         $file->setCtime((new \DateTime())->sub(new \DateInterval('P'.$expire.'D')));
-                        $file->setMtime($file->getMtime());
+                        $file->setMtime($file->getCtime());
                         $file->setSize($size);
                         if ($mpu) {
                             $file->setMultipartUploadId('mpu'.$fileCount);
