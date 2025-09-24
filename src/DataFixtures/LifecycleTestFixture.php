@@ -45,6 +45,23 @@ class LifecycleTestFixture extends Fixture
             }
         }
 
+        /*
+         * Create files with various prefixes, sizes, creation dates, in versioned bucket
+         */
+        $fileCount = 0;
+        foreach (['', 'folder1/', 'folder2/', 'folder3/'] as $prefix) {
+            foreach ([3, 5, 10] as $expire) {
+                foreach ([10, 100, 1000] as $size) {
+                    $file = $this->bucketService->createFile($versionedBucket, $prefix.'file_'.$expire.'_'.$size);
+                    $file->setCtime((new \DateTime())->sub(new \DateInterval('P'.$expire.'D')));
+                    $file->setMtime($file->getCtime());
+                    $file->setSize($size);
+                    $file->setCurrentVersion(true);
+                    $manager->persist($file);
+                }
+            }
+        }
+
         $manager->flush();
     }
 
