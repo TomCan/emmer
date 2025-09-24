@@ -50,7 +50,55 @@ class ExecutionTest extends KernelTestCase
         $executor->execute($loader->getFixtures());
     }
 
-    public function testAbortIncompleteMpu(): void
+    public function testFilter(): void
+    {
+        $this->loadFixtures();
+
+        // get bucket
+        $bucket = $this->bucketService->getBucket('regular-bucket');
+
+        // prep rule
+        $parsedRule = new ParsedLifecycleRule();
+        $parsedRule->setStatus('Enabled');
+
+        // will match every multi-part upload
+        $parsedRule->setAbortIncompleteMultipartUploadDays(1);
+        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
+        $this->assertCount(36, iterator_to_array($files));
+
+        // test with prefix (matches 1/4th of the files = 9
+        $parsedRule->setFilterPrefix('folder1/');
+        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
+        $this->assertCount(9, iterator_to_array($files));
+
+        // test with minimum size (matches 2/3th of the files = 24)
+        $parsedRule->setFilterPrefix(null);
+        $parsedRule->setFilterSizeGreaterThan(99);
+        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
+        $this->assertCount(24, iterator_to_array($files));
+
+        // test with maximum size (matches 2/3th of the files = 24)
+        $parsedRule->setFilterSizeGreaterThan(null);
+        $parsedRule->setFilterSizeLessThan(101);
+        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
+        $this->assertCount(24, iterator_to_array($files));
+
+        // test with And, both minimum as maximum size matches 1/3 = 12)
+        $parsedRule->setFilterSizeLessThan(null);
+        $parsedRule->setFilterAndSizeGreaterThan(99);
+        $parsedRule->setFilterAndSizeLessThan(101);
+        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
+        $this->assertCount(12, iterator_to_array($files));
+
+        // test with And, both minimum as maximum size, and prefix matches 3
+        $parsedRule->setFilterAndSizeGreaterThan(99);
+        $parsedRule->setFilterAndSizeLessThan(101);
+        $parsedRule->setFilterAndPrefix('folder1/');
+        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
+        $this->assertCount(3, iterator_to_array($files));
+    }
+
+    public function testAbortIncompleteMpuRegular(): void
     {
         $reflection = new \ReflectionClass($this->lifecycleService);
         $method = $reflection->getMethod('processBucketLifecycleRule');
@@ -65,49 +113,96 @@ class ExecutionTest extends KernelTestCase
         $parsedRule = new ParsedLifecycleRule();
         $parsedRule->setStatus('Enabled');
 
-        // find mpus older than 11 days (should be none)
+        // find mpus older than 11 days (matches 0 mpus)
         $parsedRule->setAbortIncompleteMultipartUploadDays(11);
-        // should not have deleted any mpu
-        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
-        $this->assertCount(0, iterator_to_array($files, false));
-
-        // keep only 6 days, should deleted 12 keeping 24
-        $parsedRule->setAbortIncompleteMultipartUploadDays(6);
-        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
-        $files = iterator_to_array($files, false);
-        $this->assertCount(12, $files);
-
-        // actually invoke method
         $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
-        // should not result anymore in expired mpus
-        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
-        $files = iterator_to_array($files, false);
-        $this->assertCount(0, $files);
         // check remaining mpus
         $files = $this->fileRepository->findMpuPagedByBucketAndPrefix($bucket, '');
-        $files = iterator_to_array($files, false);
-        $this->assertCount(24, $files);
+        $this->assertCount(36, iterator_to_array($files));
 
-        // test with prefix, keeping only 1 day, should match 6
-        $parsedRule->setAbortIncompleteMultipartUploadDays(1);
-        $parsedRule->setFilterPrefix('folder1/');
-        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
-        $files = iterator_to_array($files, false);
-        $this->assertCount(6, $files);
-
-        // actually invoke method
+        // find mpus older than 4 days (matches 24 mpus)
+        $parsedRule->setAbortIncompleteMultipartUploadDays(4);
         $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
-        // should not result anymore in expired mpus
-        $files = $this->fileRepository->findByLifecycleRuleExpiredMpu($bucket, $parsedRule);
-        $files = iterator_to_array($files, false);
-        $this->assertCount(0, $files);
-        // check remaining mpus under prefix (should be 0 as all deleted)
-        $files = $this->fileRepository->findMpuPagedByBucketAndPrefix($bucket, 'folder1/');
-        $files = iterator_to_array($files, false);
-        $this->assertCount(0, $files);
-        // check remaining mpus without prefix (should be 9)
+        // check remaining mpus
         $files = $this->fileRepository->findMpuPagedByBucketAndPrefix($bucket, '');
-        $files = iterator_to_array($files, false);
-        $this->assertCount(18, $files);
+        $this->assertCount(12, iterator_to_array($files));
+    }
+
+    public function testExpireCurrentRegular(): void
+    {
+        $reflection = new \ReflectionClass($this->lifecycleService);
+        $method = $reflection->getMethod('processBucketLifecycleRule');
+        $method->setAccessible(true);
+
+        $this->loadFixtures();
+
+        // get bucket
+        $bucket = $this->bucketService->getBucket('regular-bucket');
+
+        // prep rule
+        $parsedRule = new ParsedLifecycleRule();
+        $parsedRule->setStatus('Enabled');
+
+        // expire current version older than 7 days (matches 12 files)
+        $parsedRule->setExpirationDays(7);
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+        // check remaining mpus
+        $files = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, '');
+        $this->assertCount(24, iterator_to_array($files));
+
+        // expire date in future, should not match any
+        $parsedRule->setExpirationDays(null);
+        $parsedRule->setExpirationDate(new \DateTime('+1 year'));
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+        // check remaining mpus
+        $files = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, '');
+        $this->assertCount(24, iterator_to_array($files));
+
+        // expire date in the past, should match all
+        $parsedRule->setExpirationDate(new \DateTime('-1 year'));
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+        // check remaining mpus
+        $files = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, '');
+        $this->assertCount(0, iterator_to_array($files));
+    }
+
+    public function testExpireCurrentVersioned(): void
+    {
+        $reflection = new \ReflectionClass($this->lifecycleService);
+        $method = $reflection->getMethod('processBucketLifecycleRule');
+        $method->setAccessible(true);
+
+        $this->loadFixtures();
+
+        // get bucket
+        $bucket = $this->bucketService->getBucket('versioned-bucket');
+
+        // prep rule
+        $parsedRule = new ParsedLifecycleRule();
+        $parsedRule->setStatus('Enabled');
+
+        // expire current version older than 7 days (matches 12 files)
+        $parsedRule->setExpirationDays(7);
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+
+        // check remaining files
+        $files = $this->fileRepository->findObjectsPagedByBucketAndPrefix($bucket, '');
+        // still matches 36, as deleted files have been replaced with delete markers
+        $this->assertCount(36, iterator_to_array($files));
+
+        // retrieve one of these files and verify it's a delete marker
+        $file = $this->bucketService->getFile($bucket, 'folder1/file_10_10');
+        $this->assertTrue($file->isDeleteMarker());
+
+        // get all versions of the file
+        $versions = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, 'folder1/');
+        $count = 0;
+        foreach ($versions as $version) {
+            if ('folder1/file_10_10' == $version->getName()) {
+                ++$count;
+            }
+        }
+        // should have 2 versions (the original and the delete marker)
+        $this->assertEquals(2, $count);
     }
 }
