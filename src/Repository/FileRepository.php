@@ -148,12 +148,12 @@ class FileRepository extends ServiceEntityRepository
                 ->setParameter('prefix', $escapedPrefix.'%');
         }
         if (null != $rule->getFilterSizeGreaterThan() || null != $rule->getFilterAndSizeGreaterThan()) {
-            $qb->andWhere('f.size > :size')
-                ->setParameter('size', $rule->getFilterSizeGreaterThan() ?? $rule->getFilterAndSizeGreaterThan());
+            $qb->andWhere('f.size > :sizegt')
+                ->setParameter('sizegt', $rule->getFilterSizeGreaterThan() ?? $rule->getFilterAndSizeGreaterThan());
         }
         if (null != $rule->getFilterSizeLessThan() || null != $rule->getFilterAndSizeLessThan()) {
-            $qb->andWhere('f.size < :size')
-                ->setParameter('size', $rule->getFilterSizeLessThan() ?? $rule->getFilterAndSizeLessThan());
+            $qb->andWhere('f.size < :sizelt')
+                ->setParameter('sizelt', $rule->getFilterSizeLessThan() ?? $rule->getFilterAndSizeLessThan());
         }
         if (null != $rule->getFilterTag() || null != $rule->getFilterAndTags()) {
             // tags not supported
