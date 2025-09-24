@@ -143,8 +143,9 @@ class FileRepository extends ServiceEntityRepository
     private function applyLifecycleFilter(QueryBuilder $qb, ParsedLifecycleRule $rule): void
     {
         if (null != $rule->getFilterPrefix() || null != $rule->getFilterAndPrefix()) {
+            $escapedPrefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $rule->getFilterPrefix() ?? $rule->getFilterAndPrefix());
             $qb->andWhere('f.name LIKE :prefix')
-                ->setParameter('prefix', ($rule->getFilterPrefix() ?? $rule->getFilterAndPrefix()).'%');
+                ->setParameter('prefix', $escapedPrefix.'%');
         }
         if (null != $rule->getFilterSizeGreaterThan() || null != $rule->getFilterAndSizeGreaterThan()) {
             $qb->andWhere('f.size > :size')
