@@ -257,4 +257,52 @@ class FileRepository extends ServiceEntityRepository
             ->getQuery()
             ->toIterable();
     }
+
+    /**
+     * @return File[]
+     */
+    public function findByLifecycleRuleExpiredDeleteMarkers(Bucket $bucket, ParsedLifecycleRule $rule): iterable
+    {
+        $qb = $this->createQueryBuilder('f')
+            ->andWhere('f.bucket = :bucket')
+            ->setParameter('bucket', $bucket)
+            ->andWhere('f.multipartUploadId IS NULL')
+            ->andWhere('f.deleteMarker = 1')
+        ;
+
+        if ($rule->hasFilter()) {
+            $this->applyLifecycleFilter($qb, $rule);
+        }
+
+        /*
+          * Expired delete marker; delete markers that don't have any non-delete markers after them
+          */
+        $qb2 = $this->createQueryBuilder('f2')
+            ->select('1')
+            ->andWhere('f2.bucket = :bucket')
+            ->setParameter('bucket', $bucket)
+            ->andWhere('f2.deleteMarker = 0')
+            ->andWhere('f2.name = f.name');
+        $qb2
+            ->andWhere(
+                $qb2->expr()->orX(
+                    'f2.ctime < f.ctime',
+                    'f2.ctime = f.ctime AND f2.id < f.id'
+                )
+            );
+
+        $qb
+            ->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $qb2->getDQL()
+                    )
+                )
+            )
+        ;
+
+        return $qb
+            ->getQuery()
+            ->toIterable();
+    }
 }

@@ -279,4 +279,71 @@ class ExecutionTest extends KernelTestCase
         $this->assertEquals(4, $count);
     }
 
+    public function testExpiredObjectDeleteMarkers(): void
+    {
+        $reflection = new \ReflectionClass($this->lifecycleService);
+        $method = $reflection->getMethod('processBucketLifecycleRule');
+        $method->setAccessible(true);
+
+        $this->loadVersionedFixtures();
+
+        // get bucket
+        $bucket = $this->bucketService->getBucket('versioned-bucket');
+
+        // get versioned file and delete it
+        $file = $this->bucketService->getFile($bucket, 'versioned-file');
+        $this->bucketService->deleteFile($file, false, true);
+
+        // get all versions of the file and delete them (except for delete marker)
+        $versions = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, '');
+        $count = 0;
+        $finalVersion = null;
+        foreach ($versions as $version) {
+            if ('versioned-file' == $version->getName()) {
+                if (9 == $count) {
+                    $finalVersion = $version;
+                    break;
+                }
+                if (!$version->isDeleteMarker()) {
+                    $this->bucketService->deleteFileVersion($version, false, true);
+                    ++$count;
+                }
+            }
+        }
+
+        // get all versions of the file, should only be the delete marker and 1 other version
+        $versions = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, '');
+        $count = 0;
+        $deleteMarkers = 0;
+        foreach ($versions as $version) {
+            if ('versioned-file' == $version->getName()) {
+                ++$count;
+                if ($version->isDeleteMarker()) {
+                    ++$deleteMarkers;
+                }
+            }
+        }
+        $this->assertEquals(2, $count);
+        $this->assertEquals(1, $deleteMarkers);
+
+        // prep rule
+        $parsedRule = new ParsedLifecycleRule();
+        $parsedRule->setStatus('Enabled');
+        $parsedRule->setExpiredObjectDeleteMarker(true);
+        // invoke method
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+        // retrieve file
+        $file = $this->bucketService->getFile($bucket, 'versioned-file');
+        // delete marker should still exist because of old version
+        $this->assertTrue(null !== $file, 'Deletemarker should not be deleted');
+
+        // $finaleVersion holds last remaining non-deletemarker version, delete
+        $this->bucketService->deleteFileVersion($finalVersion, false, true);
+        // invoke method
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+        // retrieve file
+        $file = $this->bucketService->getFile($bucket, 'versioned-file');
+        // delete marker should still exist because of old version
+        $this->assertTrue(null == $file, 'Deletemarker should be deleted');
+    }
 }

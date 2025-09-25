@@ -506,6 +506,14 @@ class LifecycleService
                     $this->entityManager->detach($file);
                 }
             }
+            // Delete expired delete markers
+            if (true === $parsedRule->getExpiredObjectDeleteMarker()) {
+                $files = $this->fileRepository->findByLifecycleRuleExpiredDeleteMarkers($bucket, $parsedRule);
+                foreach ($files as $file) {
+                    $this->bucketService->deleteFileVersion($file, true, true);
+                    $this->entityManager->detach($file);
+                }
+            }
         }
     }
 }
