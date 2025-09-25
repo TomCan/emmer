@@ -204,5 +204,23 @@ class ExecutionTest extends KernelTestCase
         }
         // should have 2 versions (the original and the delete marker)
         $this->assertEquals(2, $count);
+
+        // file still refers to 'folder1/file_10_10', change mtime and re-run
+        $file->setMtime(new \DateTime('-1 year'));
+        $this->entityManager->persist($file);
+        $this->entityManager->flush();
+        // re-run
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+
+        // get all versions of the file
+        $versions = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, 'folder1/');
+        $count = 0;
+        foreach ($versions as $version) {
+            if ('folder1/file_10_10' == $version->getName()) {
+                ++$count;
+            }
+        }
+        // should still have 2 versions as expired delete markers don't create new delete markers
+        $this->assertEquals(2, $count);
     }
 }
