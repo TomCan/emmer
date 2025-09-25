@@ -4,6 +4,7 @@ namespace App\Tests\Service;
 
 use App\DataFixtures\BaseTestFixture;
 use App\DataFixtures\LifecycleTestFixture;
+use App\DataFixtures\LifecycleVersionedTestFixture;
 use App\Domain\Lifecycle\ParsedLifecycleRule;
 use App\Repository\FileRepository;
 use App\Service\BucketService;
@@ -46,6 +47,15 @@ class ExecutionTest extends KernelTestCase
         $loader = new Loader();
         $loader->addFixture(new BaseTestFixture());
         $loader->addFixture(new LifecycleTestFixture($this->bucketService));
+        $executor = new ORMExecutor($this->entityManager, new ORMPurger($this->entityManager));
+        $executor->execute($loader->getFixtures());
+    }
+
+    private function loadVersionedFixtures(): void
+    {
+        $loader = new Loader();
+        $loader->addFixture(new BaseTestFixture());
+        $loader->addFixture(new LifecycleVersionedTestFixture($this->bucketService));
         $executor = new ORMExecutor($this->entityManager, new ORMPurger($this->entityManager));
         $executor->execute($loader->getFixtures());
     }
@@ -223,4 +233,50 @@ class ExecutionTest extends KernelTestCase
         // should still have 2 versions as expired delete markers don't create new delete markers
         $this->assertEquals(2, $count);
     }
+
+    public function testExpireNoncurrentVersioned(): void
+    {
+        $reflection = new \ReflectionClass($this->lifecycleService);
+        $method = $reflection->getMethod('processBucketLifecycleRule');
+        $method->setAccessible(true);
+
+        $this->loadVersionedFixtures();
+
+        // get bucket
+        $bucket = $this->bucketService->getBucket('versioned-bucket');
+
+        // prep rule
+        $parsedRule = new ParsedLifecycleRule();
+        $parsedRule->setStatus('Enabled');
+
+        // remove noncurrent version older than 7 days (matches 2 versions)
+        $parsedRule->setNoncurrentVersionExpirationDays(7);
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+        // get all versions of the file
+        $versions = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, '');
+        $count = 0;
+        foreach ($versions as $version) {
+            if ('versioned-file' == $version->getName()) {
+                ++$count;
+            }
+        }
+        // should have 7 versions
+        $this->assertEquals(8, $count);
+
+        // remove noncurrent version older than 2 days (matches 5 versions, but can only delte those with at least 3 newer non-current versions)
+        $parsedRule->setNoncurrentVersionExpirationDays(2);
+        $parsedRule->setNoncurrentVersionNewerVersions(3);
+        $method->invokeArgs($this->lifecycleService, [$bucket, $parsedRule]);
+        // get all versions of the file
+        $versions = $this->fileRepository->findVersionsPagedByBucketAndPrefix($bucket, '');
+        $count = 0;
+        foreach ($versions as $version) {
+            if ('versioned-file' == $version->getName()) {
+                ++$count;
+            }
+        }
+        // should have 4 version (current + 3 noncurrent)
+        $this->assertEquals(4, $count);
+    }
+
 }
