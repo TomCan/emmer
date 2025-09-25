@@ -244,7 +244,7 @@ class FileRepository extends ServiceEntityRepository
             $qb->andWhere('f.multipartUploadId IS NULL')
                 ->andWhere('f.currentVersion = 0')
                 ->andWhere('f.nctime < :nvcexpmtime')
-                ->setParameter('nvcexpmtime', (new \DateTime())->sub(new \DateInterval('P'.$rule->getExpirationDays().'D')));
+                ->setParameter('nvcexpmtime', (new \DateTime())->sub(new \DateInterval('P'.$rule->getNoncurrentVersionExpirationDays().'D')));
 
             if (null != $rule->getNoncurrentVersionNewerVersions()) {
                 // keep at least N noncurrent versions
