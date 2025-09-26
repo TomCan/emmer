@@ -31,7 +31,7 @@ class CorsOptions extends AbstractController
                     return $responseService->createForbiddenResponse();
                 } else {
                     $headers = [
-                        'Access-Control-Allow-Origin' => $request->headers->get('Origin'),
+                        'Access-Control-Allow-Origin' => in_array($request->headers->get('Origin'), $rule->getAllowedOrigins()) ? $request->headers->get('Origin') : '*',
                         'Access-Control-Allow-Methods' => implode(', ', $rule->getAllowedMethods()),
                     ];
                     if ($rule->getAllowedMethods()) {
