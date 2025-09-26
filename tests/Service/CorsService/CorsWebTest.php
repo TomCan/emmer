@@ -53,8 +53,14 @@ class CorsWebTest extends WebTestCase
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
         ];
 
-        // POST + emmer.emr origin = allowed
+        // POST + emmer.emr origin + bucket path = allowed
         $crawler = $this->client->request('OPTIONS', '/regular-bucket', [], [], $headers);
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Access-Control-Allow-Origin', 'emmer.emr');
+        $this->assertResponseHeaderSame('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
+
+        // POST + emmer.emr origin + subpath = allowed
+        $crawler = $this->client->request('OPTIONS', '/regular-bucket/my-file', [], [], $headers);
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Access-Control-Allow-Origin', 'emmer.emr');
         $this->assertResponseHeaderSame('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
