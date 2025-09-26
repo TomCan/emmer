@@ -6,6 +6,7 @@ use App\Domain\List\BucketList;
 use App\Domain\List\ObjectList;
 use App\Domain\List\ObjectpartList;
 use App\Entity\Bucket;
+use App\Entity\CorsRule;
 use App\Entity\File;
 use App\Entity\Filepart;
 use App\Entity\Policy;
@@ -440,6 +441,39 @@ class BucketService
         // unlink all policies from a bucket
         foreach ($bucket->getPolicies() as $policy) {
             $this->policyService->unlinkPolicy($policy, $bucket);
+        }
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
+
+    /**
+     * @param CorsRule[] $rules
+     */
+    public function setBucketCors(Bucket $bucket, array $rules, bool $flush = false): void
+    {
+        // unlink all policies from a bucket and attach passed policy
+        $this->unlinkBucketCors($bucket, false);
+
+        $bucket->getCorsRules()->clear();
+        foreach ($rules as $rule) {
+            $this->entityManager->persist($rule);
+            $bucket->addCorsRule($rule);
+        }
+        $this->entityManager->persist($bucket);
+
+        if ($flush) {
+            $this->entityManager->flush();
+        }
+    }
+
+    public function unlinkBucketCors(Bucket $bucket, bool $flush = false): void
+    {
+        // unlink all cors rules from a bucket
+        foreach ($bucket->getCorsRules() as $corsRule) {
+            $bucket->removeCorsRule($corsRule);
+            $this->entityManager->persist($corsRule);
         }
 
         if ($flush) {

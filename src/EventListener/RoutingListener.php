@@ -5,15 +5,18 @@ namespace App\EventListener;
 use App\Controller\Api\AbortMultipartUpload;
 use App\Controller\Api\CompleteMultipartUpload;
 use App\Controller\Api\CreateMultipartUpload;
+use App\Controller\Api\DeleteBucketCors;
 use App\Controller\Api\DeleteBucketLifecycle;
 use App\Controller\Api\DeleteBucketPolicy;
 use App\Controller\Api\DeleteObjects;
+use App\Controller\Api\GetBucketCors;
 use App\Controller\Api\GetBucketLifecycleConfiguration;
 use App\Controller\Api\GetBucketPolicy;
 use App\Controller\Api\GetBucketVersioning;
 use App\Controller\Api\ListMultipartUploads;
 use App\Controller\Api\ListObjectVersions;
 use App\Controller\Api\ListParts;
+use App\Controller\Api\PutBucketCors;
 use App\Controller\Api\PutBucketLifecycleConfiguration;
 use App\Controller\Api\PutBucketPolicy;
 use App\Controller\Api\PutBucketVersioning;
@@ -41,6 +44,9 @@ class RoutingListener implements EventSubscriberInterface
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('lifecycle')) {
                 $request->attributes->set('_controller', GetBucketLifecycleConfiguration::class.'::getBucketLifecycleConfiguration');
+                $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('cors')) {
+                $request->attributes->set('_controller', GetBucketCors::class.'::getBucketCors');
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('versioning')) {
                 $request->attributes->set('_controller', GetBucketVersioning::class.'::getBucketVersioning');
@@ -73,6 +79,9 @@ class RoutingListener implements EventSubscriberInterface
             } elseif ($request->query->has('lifecycle')) {
                 $request->attributes->set('_controller', PutBucketLifecycleConfiguration::class.'::putBucketLifecycleConfiguration');
                 $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('cors')) {
+                $request->attributes->set('_controller', PutBucketCors::class.'::putBucketCors');
+                $request->attributes->set('bucket', $matches[1]);
             }
         }
 
@@ -83,6 +92,9 @@ class RoutingListener implements EventSubscriberInterface
                 $request->attributes->set('bucket', $matches[1]);
             } elseif ($request->query->has('lifecycle')) {
                 $request->attributes->set('_controller', DeleteBucketLifecycle::class.'::deleteBucketLifecycle');
+                $request->attributes->set('bucket', $matches[1]);
+            } elseif ($request->query->has('cors')) {
+                $request->attributes->set('_controller', DeleteBucketCors::class.'::deleteBucketCors');
                 $request->attributes->set('bucket', $matches[1]);
             }
         }

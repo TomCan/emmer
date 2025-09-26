@@ -94,4 +94,45 @@ class CorsService
 
         return $corsRule;
     }
+
+    /**
+     * @param CorsRule[] $rules
+     *
+     * @return mixed[]
+     */
+    public function convertRulesToXmlArray(array $rules): array
+    {
+        $convertedRules = [
+            'CORSConfiguration' => [
+                '#CORSRule' => [],
+            ],
+        ];
+
+        foreach ($rules as $rule) {
+            $corsRule = [
+                '#AllowedMethod' => $rule->getAllowedMethods(),
+                '#AllowedOrigin' => $rule->getAllowedOrigins(),
+            ];
+
+            if (null !== $rule->getAllowedHeaders()) {
+                $corsRule['#AllowedHeader'] = $rule->getAllowedHeaders();
+            }
+
+            if (null !== $rule->getExposeHeaders()) {
+                $corsRule['#ExposeHeader'] = $rule->getExposeHeaders();
+            }
+
+            if (null !== $rule->getMaxAgeSeconds()) {
+                $corsRule['MaxAgeSeconds'] = $rule->getMaxAgeSeconds();
+            }
+
+            if (null !== $rule->getCustomId()) {
+                $corsRule['ID'] = $rule->getCustomId();
+            }
+
+            $convertedRules['#CORSRule'][] = $corsRule;
+        }
+
+        return $convertedRules;
+    }
 }
