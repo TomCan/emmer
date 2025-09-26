@@ -6,6 +6,7 @@ use App\Entity\CorsRule;
 use App\Exception\Cors\InvalidCorsConfigException;
 use App\Exception\Cors\InvalidCorsRuleException;
 use App\Service\CorsService;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class CorsServiceTest extends TestCase
@@ -321,9 +322,7 @@ class CorsServiceTest extends TestCase
         $this->assertEquals($expected, $result);
     }
 
-    /**
-     * @dataProvider validHttpMethodsProvider
-     */
+    #[DataProvider('validHttpMethodsProvider')]
     public function testAllValidHttpMethods(string $method): void
     {
         $xmlString = "<CORSRule>
