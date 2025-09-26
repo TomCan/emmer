@@ -49,4 +49,15 @@ class BucketRepository extends ServiceEntityRepository
             ->getQuery()
             ->toIterable();
     }
+
+    /**
+     * @return Bucket[]
+     */
+    public function findWithLifecycleConfiguration(): array
+    {
+        return $this->createQueryBuilder('b')
+            ->andWhere('b.lifecycleConfiguration IS NOT NULL')
+            ->getQuery()
+            ->toIterable();
+    }
 }

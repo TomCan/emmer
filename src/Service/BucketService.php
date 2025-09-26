@@ -64,6 +64,14 @@ class BucketService
         return $this->bucketRepository->findAll();
     }
 
+    /**
+     * @return array<Bucket>
+     */
+    public function getBucketsWithLifecycleConfiguration(): array
+    {
+        return $this->bucketRepository->findWithLifecycleConfiguration();
+    }
+
     public function createBucket(string $name, User $user, string $description = '', string $path = '', bool $addDefaultPolicies = true, bool $flush = true): Bucket
     {
         if (!$this->isValidBucketName($name)) {

@@ -8,7 +8,6 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -26,9 +25,6 @@ class BucketLifecycleRunCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('multi-part-uploads', null, InputOption::VALUE_REQUIRED, 'Delete multipart uploads')
-            ->addOption('non-current-versions', null, InputOption::VALUE_REQUIRED, 'Delete non-current versions')
-            ->addOption('current-versions', null, InputOption::VALUE_REQUIRED, 'Delete current versions')
             ->addArgument('bucket', InputArgument::OPTIONAL, 'Bucket name')
         ;
     }
@@ -39,14 +35,6 @@ class BucketLifecycleRunCommand extends Command
 
         // get arguments / options
         $bucket = $input->getArgument('bucket');
-        $mpu = $input->getOption('multi-part-uploads') ?? -1;
-        $ncv = $input->getOption('non-current-versions') ?? -1;
-        $cv = $input->getOption('current-versions') ?? -1;
-
-        // check if at least one option is specified
-        if (-1 == $mpu && -1 == $ncv && -1 == $cv) {
-            $io->error('You must specify at least one option');
-        }
 
         // get a specific bucket or all buckets
         if ($bucket) {
@@ -56,7 +44,11 @@ class BucketLifecycleRunCommand extends Command
         }
 
         foreach ($buckets as $bucket) {
-            $this->lifecycleService->run($bucket, $mpu, $ncv, $cv, $output);
+            try {
+                $this->lifecycleService->processBucketLifecycleRules($bucket);
+            } catch (\Exception $e) {
+                $io->error('Error processing lifecycle rules for '.$bucket->getName().PHP_EOL.$e->getMessage());
+            }
         }
 
         return Command::SUCCESS;
