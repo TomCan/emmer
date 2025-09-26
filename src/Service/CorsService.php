@@ -2,9 +2,12 @@
 
 namespace App\Service;
 
+use App\Entity\Bucket;
 use App\Entity\CorsRule;
 use App\Exception\Cors\InvalidCorsConfigException;
 use App\Exception\Cors\InvalidCorsRuleException;
+use Symfony\Component\HttpFoundation\HeaderBag;
+use Symfony\Component\HttpFoundation\Request;
 
 class CorsService
 {
@@ -134,5 +137,49 @@ class CorsService
         }
 
         return $convertedRules;
+    }
+
+    public function getMatchingCorsRule(Bucket $bucket, HeaderBag $headers): ?CorsRule
+    {
+        $origin = $headers->get('Origin');
+        $method = $headers->get('Access-Control-Request-Method');
+
+        if (null === $origin || null === $method) {
+            // required headers missing
+            return null;
+        }
+
+        foreach ($bucket->getCorsRules() as $rule) {
+            $originMatches = in_array($origin, $rule->getAllowedOrigins()) || in_array('*', $rule->getAllowedOrigins());
+            $methodMatches = in_array($method, $rule->getAllowedMethods());
+            if (!$originMatches && !$methodMatches) {
+                continue;
+            }
+
+            // if Access-Control-Request-Headers is passed, all headers must be included in rule to match
+            if ($headers->get('Access-Control-Request-Headers')) {
+                if (is_array($rule->getAllowedHeaders())) {
+                    $requestHeaders = explode(',', $headers->get('Access-Control-Request-Headers'));
+                    foreach ($requestHeaders as $requestHeader) {
+                        $requestHeader = strtolower(trim($requestHeader));
+                        foreach ($rule->getAllowedHeaders() as $allowedHeader) {
+                            $allowedHeader = strtolower(trim($allowedHeader));
+                            if ($allowedHeader === $requestHeader) {
+                                // header matches
+                                continue 2; // foreach $requestHeaders
+                            }
+                        }
+                        // if we get here, header didn't match so rule doesn't match
+                        continue 2; // foreach $bucket->getCorsRules
+                    }
+
+                    // if we get here, all headers matched, we have a matching rule
+                    return $rule;
+                }
+            }
+        }
+
+        // if we get here, no rule matched
+        return null;
     }
 }

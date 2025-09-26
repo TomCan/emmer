@@ -250,9 +250,9 @@ class CorsServiceTest extends TestCase
                         '#ExposeHeader' => ['ETag'],
                         'MaxAgeSeconds' => 3600,
                         'ID' => 'test-rule',
-                    ]
-                ]
-            ]
+                    ],
+                ],
+            ],
         ];
 
         $this->assertEquals($expected, $result);
@@ -270,9 +270,9 @@ class CorsServiceTest extends TestCase
                     [
                         '#AllowedMethod' => ['GET'],
                         '#AllowedOrigin' => ['*'],
-                    ]
-                ]
-            ]
+                    ],
+                ],
+            ],
         ];
 
         $this->assertEquals($expected, $result);
@@ -300,9 +300,9 @@ class CorsServiceTest extends TestCase
                         '#AllowedMethod' => ['POST', 'PUT'],
                         '#AllowedOrigin' => ['https://example.com'],
                         'MaxAgeSeconds' => 7200,
-                    ]
-                ]
-            ]
+                    ],
+                ],
+            ],
         ];
 
         $this->assertEquals($expected, $result);
@@ -314,8 +314,8 @@ class CorsServiceTest extends TestCase
 
         $expected = [
             'CORSConfiguration' => [
-                '#CORSRule' => []
-            ]
+                '#CORSRule' => [],
+            ],
         ];
 
         $this->assertEquals($expected, $result);
@@ -337,6 +337,9 @@ class CorsServiceTest extends TestCase
         $this->assertEquals([strtoupper($method)], $rule->getAllowedMethods());
     }
 
+    /**
+     * @return array<string[]>
+     */
     public static function validHttpMethodsProvider(): array
     {
         return [
