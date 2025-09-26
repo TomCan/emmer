@@ -437,7 +437,7 @@ XML;
         $this->lifecycleService->parseLifecycleFilter($parsedRule, $filter);
 
         $this->assertNull($parsedRule->getFilterPrefix());
-        $this->assertEquals(['key' => 'Environment', 'value' => 'Production'], $parsedRule->getFilterTag());
+        $this->assertEquals(['Key' => 'Environment', 'Value' => 'Production'], $parsedRule->getFilterTag());
         $this->assertFalse($parsedRule->hasAnd());
     }
 
@@ -475,8 +475,8 @@ XML;
         $this->assertEquals(1000, $parsedRule->getFilterAndSizeGreaterThan());
         $this->assertIsArray($parsedRule->getFilterAndTags());
         $this->assertCount(2, $parsedRule->getFilterAndTags());
-        $this->assertEquals(['key' => 'Department', 'value' => 'Finance'], $parsedRule->getFilterAndTags()[0]);
-        $this->assertEquals(['key' => 'Project', 'value' => 'Archive'], $parsedRule->getFilterAndTags()[1]);
+        $this->assertEquals(['Key' => 'Department', 'Value' => 'Finance'], $parsedRule->getFilterAndTags()[0]);
+        $this->assertEquals(['Key' => 'Project', 'Value' => 'Archive'], $parsedRule->getFilterAndTags()[1]);
     }
 
     /**
@@ -504,7 +504,7 @@ XML;
         $this->assertEquals(5000, $parsedRule->getFilterAndSizeLessThan());
         $this->assertIsArray($parsedRule->getFilterAndTags());
         $this->assertCount(1, $parsedRule->getFilterAndTags());
-        $this->assertEquals(['key' => 'Status', 'value' => 'Temporary'], $parsedRule->getFilterAndTags()[0]);
+        $this->assertEquals(['Key' => 'Status', 'Value' => 'Temporary'], $parsedRule->getFilterAndTags()[0]);
 
         // In And context, normal filter properties should not be set
         $this->assertNull($parsedRule->getFilterPrefix());
