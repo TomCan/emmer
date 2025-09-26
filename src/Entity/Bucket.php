@@ -47,11 +47,18 @@ class Bucket
     #[ORM\OneToMany(targetEntity: LifecycleRules::class, mappedBy: 'bucket', orphanRemoval: true)]
     private Collection $lifecycleRules;
 
+    /**
+     * @var Collection<int, CorsRule>
+     */
+    #[ORM\OneToMany(targetEntity: CorsRule::class, mappedBy: 'bucket', orphanRemoval: true)]
+    private Collection $corsRules;
+
     public function __construct()
     {
         $this->policies = new ArrayCollection();
         $this->ctime = new \DateTime();
         $this->lifecycleRules = new ArrayCollection();
+        $this->corsRules = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -193,6 +200,36 @@ class Bucket
             // set the owning side to null (unless already changed)
             if ($lifecycleRule->getBucket() === $this) {
                 $lifecycleRule->setBucket(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CorsRule>
+     */
+    public function getCorsRules(): Collection
+    {
+        return $this->corsRules;
+    }
+
+    public function addCorsRule(CorsRule $corsRule): static
+    {
+        if (!$this->corsRules->contains($corsRule)) {
+            $this->corsRules->add($corsRule);
+            $corsRule->setBucket($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCorsRule(CorsRule $corsRule): static
+    {
+        if ($this->corsRules->removeElement($corsRule)) {
+            // set the owning side to null (unless already changed)
+            if ($corsRule->getBucket() === $this) {
+                $corsRule->setBucket(null);
             }
         }
 
