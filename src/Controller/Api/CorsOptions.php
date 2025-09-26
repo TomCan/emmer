@@ -37,6 +37,12 @@ class CorsOptions extends AbstractController
                     if ($rule->getAllowedMethods()) {
                         $headers['Access-Control-Allow-Headers'] = strtolower(implode(', ', $rule->getAllowedHeaders()));
                     }
+                    if ($rule->getExposeHeaders()) {
+                        $headers['Access-Control-Expose-Headers'] = implode(', ', $rule->getExposeHeaders());
+                    }
+                    if (null !== $rule->getMaxAgeSeconds()) {
+                        $headers['Access-Control-Max-Age'] = $rule->getMaxAgeSeconds();
+                    }
 
                     return $responseService->createResponse(
                         '',
