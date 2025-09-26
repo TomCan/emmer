@@ -152,7 +152,7 @@ class CorsService
         foreach ($bucket->getCorsRules() as $rule) {
             $originMatches = in_array($origin, $rule->getAllowedOrigins()) || in_array('*', $rule->getAllowedOrigins());
             $methodMatches = in_array($method, $rule->getAllowedMethods());
-            if (!$originMatches && !$methodMatches) {
+            if (!$originMatches || !$methodMatches) {
                 continue;
             }
 
@@ -176,6 +176,8 @@ class CorsService
                     // if we get here, all headers matched, we have a matching rule
                     return $rule;
                 }
+            } else {
+                return $rule;
             }
         }
 
