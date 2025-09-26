@@ -130,7 +130,7 @@ class CorsService
                 $corsRule['ID'] = $rule->getCustomId();
             }
 
-            $convertedRules['#CORSRule'][] = $corsRule;
+            $convertedRules['CORSConfiguration']['#CORSRule'][] = $corsRule;
         }
 
         return $convertedRules;
