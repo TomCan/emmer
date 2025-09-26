@@ -42,7 +42,6 @@ class CorsWebTest extends WebTestCase
         $executor->execute($loader->getFixtures());
     }
 
-
     public function testWebCorsHeaders(): void
     {
         $this->loadFixtures();
