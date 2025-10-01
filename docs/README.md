@@ -1,5 +1,9 @@
 # Getting started
 
+## Docker
+
+For instructions on how to build and run Emmer in a docker container, please see [DOCKER.md](DOCKER.md).
+
 ## Installing the application
 
 * Run `composer install --no-dev` to install dependencies.
@@ -9,7 +13,7 @@
 
 ## Create a user and access key
 
-* Run `php bin/console app:user:create <username>` to create a regulare user.
+* Run `php bin/console app:user:create <username>` to create a regular user.
 * Run `php bin/console app:user:create <username> -r` to create a root user.
 
 Note that access keys belonging to root users have full access to all buckets and APIs.
