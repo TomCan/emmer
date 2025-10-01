@@ -11,6 +11,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -32,7 +33,9 @@ class AccessKeyCreateCommand extends Command
     {
         $this
             ->addArgument('e-mail', InputArgument::REQUIRED, 'E-mail address of the user to link the access key to')
-            ->addOption('label', 'l', InputArgument::OPTIONAL, 'Label for the access key')
+            ->addOption('label', 'l', InputOption::VALUE_REQUIRED, 'Label for the access key')
+            ->addOption('access-key', null, InputOption::VALUE_REQUIRED, 'Use this Access key instead of generating a random')
+            ->addOption('access-secret', null, InputOption::VALUE_REQUIRED, 'Use this Access key secret instead of generating a random one')
         ;
     }
 
@@ -58,8 +61,16 @@ class AccessKeyCreateCommand extends Command
             $accessKey->setLabel('Generated access key');
         }
 
-        $accessKey->setName('EMR'.$this->generatorService->generateId(17, GeneratorService::CLASS_UPPER + GeneratorService::CLASS_NUMBER));
-        $accessKey->setSecret(base64_encode(random_bytes(30)));
+        if ($input->getOption('access-key')) {
+            $accessKey->setName((string) $input->getOption('access-key'));
+        } else {
+            $accessKey->setName('EMR'.$this->generatorService->generateId(17, GeneratorService::CLASS_UPPER + GeneratorService::CLASS_NUMBER));
+        }
+        if ($input->getOption('access-secret')) {
+            $accessKey->setSecret((string) $input->getOption('access-secret'));
+        } else {
+            $accessKey->setSecret(base64_encode(random_bytes(30)));
+        }
 
         $this->entityManager->persist($accessKey);
         $this->entityManager->flush();
