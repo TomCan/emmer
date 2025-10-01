@@ -22,7 +22,7 @@ class AccessKey
     #[ORM\Column(length: 255)]
     private ?string $label = null;
 
-    #[ORM\ManyToOne(inversedBy: 'accesskeys')]
+    #[ORM\ManyToOne(inversedBy: 'accessKeys')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 

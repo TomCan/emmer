@@ -30,7 +30,7 @@ class Filepart
     #[ORM\Column]
     private ?string $etag = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(inversedBy: 'fileparts')]
     #[ORM\JoinColumn(nullable: false)]
     private ?File $file = null;
 
