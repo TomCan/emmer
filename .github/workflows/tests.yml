@@ -41,6 +41,8 @@ jobs:
         bin/console doc:sch:create
     - name: PHPUnit tests
       uses: php-actions/phpunit@v4
+      env:
+        XDEBUG_MODE: coverage
       with:
           php_extensions: "xdebug"
           coverage_clover: "reports/clover.xml"
