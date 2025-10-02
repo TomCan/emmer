@@ -60,7 +60,7 @@ aws_secret_access_key: <secret>
 endpoint_url = https://your-emmer-install
 ```
 
-Then you can run your regulare commands by specifying the profile
+Then you can run your regular commands by specifying the profile
 ```
 # list buckets
 $ aws --profile=my-emmer s3 ls

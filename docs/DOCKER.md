@@ -6,7 +6,9 @@ This repository comes with a Dockerfile to build a docker container containing E
 that will launch the PHP Built-in webserver with a router file. This can be used for testing purposes, but for anything
 serious a PHP + Apache or PHP-FPM image is recommended.
 
-To build the container, you can run following docker command (obviously specify your desired tag)
+You can use the pre-built images from the `tomcan/emmer` [repository at Docker hub](https://hub.docker.com/r/tomcan/emmer).
+
+To build the container yourself, you can run following docker command (obviously specify your desired tag)
 ```
 docker build -t emmer:my-tag -f docker/Dockerfile .
 ```
