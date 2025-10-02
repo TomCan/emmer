@@ -4,6 +4,7 @@ namespace App\Security;
 
 use App\Repository\AccessKeyRepository;
 use App\Service\AwsSignatureV4Validator;
+use App\Service\EncryptionService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -19,6 +20,7 @@ class AwsV4Authenticator extends AbstractAuthenticator
     public function __construct(
         private AwsSignatureV4Validator $awsSignatureV4Validator,
         private AccessKeyRepository $accessKeyRepository,
+        private EncryptionService $encryptionService,
     ) {
     }
 
@@ -46,7 +48,7 @@ class AwsV4Authenticator extends AbstractAuthenticator
             }
 
             try {
-                $this->awsSignatureV4Validator->validateRequest($request, '', 's3', $accessKey->getSecret());
+                $this->awsSignatureV4Validator->validateRequest($request, '', 's3', $this->encryptionService->decryptString($accessKey->getSecret(), false));
 
                 return new SelfValidatingPassport(new UserBadge($accessKey->getUser()->getEmail()));
             } catch (AuthenticationException $e) {

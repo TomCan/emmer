@@ -16,7 +16,7 @@ class AccessKey
     #[ORM\Column(length: 32)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 64)]
+    #[ORM\Column(length: 128)]
     private ?string $secret = null;
 
     #[ORM\Column(length: 255)]

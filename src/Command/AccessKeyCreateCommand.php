@@ -5,6 +5,7 @@ namespace App\Command;
 use App\Entity\AccessKey;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\EncryptionService;
 use App\Service\GeneratorService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -25,6 +26,7 @@ class AccessKeyCreateCommand extends Command
         private UserRepository $userRepository,
         private EntityManagerInterface $entityManager,
         private GeneratorService $generatorService,
+        private EncryptionService $encryptionService,
     ) {
         parent::__construct();
     }
@@ -67,15 +69,15 @@ class AccessKeyCreateCommand extends Command
             $accessKey->setName('EMR'.$this->generatorService->generateId(17, GeneratorService::CLASS_UPPER + GeneratorService::CLASS_NUMBER));
         }
         if ($input->getOption('access-secret')) {
-            $accessKey->setSecret((string) $input->getOption('access-secret'));
+            $accessKey->setSecret($this->encryptionService->encryptString((string) $input->getOption('access-secret'), false));
         } else {
-            $accessKey->setSecret(base64_encode(random_bytes(30)));
+            $accessKey->setSecret($this->encryptionService->encryptString(base64_encode(random_bytes(30)), false));
         }
 
         $this->entityManager->persist($accessKey);
         $this->entityManager->flush();
 
-        $io->success('A new access key has been generated:'.PHP_EOL.'Access key: '.$accessKey->getName().PHP_EOL.'Secret: '.$accessKey->getSecret());
+        $io->success('A new access key has been generated:'.PHP_EOL.'Access key: '.$accessKey->getName().PHP_EOL.'Secret: '.$this->encryptionService->decryptString($accessKey->getSecret(), false));
 
         return Command::SUCCESS;
     }
