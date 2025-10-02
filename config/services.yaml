@@ -22,5 +22,10 @@ services:
     App\:
         resource: '../src/'
 
+    App\Service\EncryptionService:
+        arguments:
+            $key: '%env(ENC_KEY)%'
+            $cipher: '%env(ENC_CIPHER)%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
