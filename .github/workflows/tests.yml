@@ -47,11 +47,13 @@ jobs:
           php_extensions: "xdebug"
           coverage_clover: "reports/clover.xml"
           log_junit: "reports/junit.xml"
-    - name: Publish Test Report
-      uses: mikepenz/action-junit-report@v5
-      if: success() || failure() # always run even if the previous step fails
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
-        report_paths: 'reports/*.xml'
+          name: test-results
+          path: |
+              reports/*.xml
     - name: Execute tests (Unit and Feature tests) via PHPUnit
       env:
         APP_ENV: test
