@@ -39,6 +39,17 @@ jobs:
         APP_ENV: test
       run: |
         bin/console doc:sch:create
+    - name: PHPUnit tests
+      uses: php-actions/phpunit@v4
+      with:
+          php_extensions: "xdebug"
+          coverage_clover: "reports/clover.xml"
+          log_junit: "reports/junit.xml"
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v5
+      if: success() || failure() # always run even if the previous step fails
+      with:
+        report_paths: 'reports/*.xml'
     - name: Execute tests (Unit and Feature tests) via PHPUnit
       env:
         APP_ENV: test
