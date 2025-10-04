@@ -16,16 +16,12 @@ services:
         bind:
             $bucketStoragePath: '%bucket_storage_path%'
             $mergeMultipartUploads: '%merge_multipart_uploads%'
+            $encryptionKey: '%env(ENC_KEY)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
-
-    App\Service\EncryptionService:
-        arguments:
-            $key: '%env(ENC_KEY)%'
-            $cipher: '%env(ENC_CIPHER)%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

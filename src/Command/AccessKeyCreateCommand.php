@@ -27,6 +27,7 @@ class AccessKeyCreateCommand extends Command
         private EntityManagerInterface $entityManager,
         private GeneratorService $generatorService,
         private EncryptionService $encryptionService,
+        private string $encryptionKey,
     ) {
         parent::__construct();
     }
@@ -69,15 +70,15 @@ class AccessKeyCreateCommand extends Command
             $accessKey->setName('EMR'.$this->generatorService->generateId(17, GeneratorService::CLASS_UPPER + GeneratorService::CLASS_NUMBER));
         }
         if ($input->getOption('access-secret')) {
-            $accessKey->setSecret($this->encryptionService->encryptString((string) $input->getOption('access-secret'), false));
+            $accessKey->setSecret($this->encryptionService->encryptString((string) $input->getOption('access-secret'), $this->encryptionKey, raw: false));
         } else {
-            $accessKey->setSecret($this->encryptionService->encryptString(base64_encode(random_bytes(30)), false));
+            $accessKey->setSecret($this->encryptionService->encryptString(base64_encode(random_bytes(30)), $this->encryptionKey, raw: false));
         }
 
         $this->entityManager->persist($accessKey);
         $this->entityManager->flush();
 
-        $io->success('A new access key has been generated:'.PHP_EOL.'Access key: '.$accessKey->getName().PHP_EOL.'Secret: '.$this->encryptionService->decryptString($accessKey->getSecret(), false));
+        $io->success('A new access key has been generated:'.PHP_EOL.'Access key: '.$accessKey->getName().PHP_EOL.'Secret: '.$this->encryptionService->decryptString($accessKey->getSecret(), $this->encryptionKey, raw: false));
 
         return Command::SUCCESS;
     }

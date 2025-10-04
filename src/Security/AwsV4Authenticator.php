@@ -21,6 +21,7 @@ class AwsV4Authenticator extends AbstractAuthenticator
         private AwsSignatureV4Validator $awsSignatureV4Validator,
         private AccessKeyRepository $accessKeyRepository,
         private EncryptionService $encryptionService,
+        private string $encryptionKey,
     ) {
     }
 
@@ -48,7 +49,7 @@ class AwsV4Authenticator extends AbstractAuthenticator
             }
 
             try {
-                $this->awsSignatureV4Validator->validateRequest($request, '', 's3', $this->encryptionService->decryptString($accessKey->getSecret(), false));
+                $this->awsSignatureV4Validator->validateRequest($request, '', 's3', $this->encryptionService->decryptString($accessKey->getSecret(), $this->encryptionKey, raw: false));
 
                 return new SelfValidatingPassport(new UserBadge($accessKey->getUser()->getEmail()));
             } catch (AuthenticationException $e) {
