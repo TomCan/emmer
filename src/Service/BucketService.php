@@ -36,6 +36,7 @@ class BucketService
         private PolicyService $policyService,
         private HashService $hashService,
         private AuthorizationService $authorizationService,
+        private EncryptionService $encryptionService,
         private bool $mergeMultipartUploads,
     ) {
     }
@@ -498,6 +499,9 @@ class BucketService
     public function createFileAndFilepartFromResource(Bucket $bucket, string $key, string $contentType, mixed $inputResource): File
     {
         $file = $this->createFile($bucket, $key, $contentType);
+        // generate new encryption key and store it encrypted
+        $file->setDecryptedKey(random_bytes(32));
+        $file->setEncryptionKey($this->encryptionService->encryptString($file->getDecryptedKey(), raw: false));
         $filepart = $this->createFilePartFromResource($file, 1, $inputResource);
 
         $file->setMtime($filepart->getMtime());
@@ -571,10 +575,16 @@ class BucketService
 
         // always create a new File object
         $targetFile = $this->createFile($file->getBucket(), $file->getName(), $file->getContentType());
+        $targetFile->setEncryptionKey($file->getEncryptionKey());
         $this->saveFile($targetFile, true);
 
         $bucketPath = $this->filesystemService->getBucketPath($bucket);
         if ($this->mergeMultipartUploads) {
+            // TODO: figure out re-encryption of parts
+            if (null !== $targetFile->getEncryptionKey()) {
+                throw new \InvalidArgumentException('Multipart uploads can\'t be merged when using encryption');
+            }
+
             // create receiving Filepart
             $targetPart = new Filepart($targetFile, 1, $this->generatorService->generateId(32), $this->getUnusedPath($bucket));
             $targetFile->addFilepart($targetPart);

@@ -13,6 +13,7 @@ class FilesystemService
 {
     public function __construct(
         private string $bucketStoragePath,
+        private EncryptionService $encryptionService,
     ) {
     }
 
@@ -100,7 +101,11 @@ class FilesystemService
         }
 
         $outputFile = fopen($filepartPath, 'wb');
-        $bytesWritten = stream_copy_to_stream($inputResource, $outputFile);
+        if (null == $filepart->getFile()->getDecryptedKey()) {
+            $bytesWritten = $this->encryptionService->encryptStream($inputResource, $outputFile, '', 'none');
+        } else {
+            $bytesWritten = $this->encryptionService->encryptStream($inputResource, $outputFile, $filepart->getFile()->getDecryptedKey());
+        }
         fclose($outputFile);
 
         return $bytesWritten;
