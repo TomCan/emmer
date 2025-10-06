@@ -8,6 +8,7 @@ class GeneratorService
     public const CLASS_UPPER = 2;
     public const CLASS_NUMBER = 4;
     public const CLASS_HEX = 8;
+    public const CLASS_ASCII_PRINTABLE = 16;
 
     private const CLASS_DEF = [
         [
@@ -34,6 +35,11 @@ class GeneratorService
             'match' => self::CLASS_HEX,
             'start' => 48, // ord('0');
             'length' => 10,
+        ],
+        [
+            'match' => self::CLASS_ASCII_PRINTABLE,
+            'start' => 32, // space
+            'length' => 94, // tilde, not counting DEL as printable
         ],
     ];
 
