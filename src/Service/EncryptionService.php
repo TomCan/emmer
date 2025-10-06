@@ -4,7 +4,22 @@ namespace App\Service;
 
 class EncryptionService
 {
-    public function encryptString(string $data, string $key, string $cipher = 'aes-256-cbc', bool $raw = true): string
+    public function __construct(private string $encryptionKey)
+    {
+    }
+
+    private function getKey(?string $key): string
+    {
+        $key = $key ?? $this->encryptionKey;
+
+        if (!$key) {
+            throw new \Exception('Encryption key not set');
+        }
+
+        return $key;
+    }
+
+    public function encryptString(string $data, ?string $key = null, string $cipher = 'aes-256-cbc', bool $raw = true): string
     {
         if ('none' == $cipher) {
             if ($raw) {
@@ -17,6 +32,8 @@ class EncryptionService
         if (!in_array($cipher, array_map('strtolower', openssl_get_cipher_methods()))) {
             throw new \RuntimeException('Cipher not supported\n'.implode(' ', openssl_get_cipher_methods()));
         }
+
+        $key = $this->getKey($key);
 
         // generate random iv
         $ivlen = openssl_cipher_iv_length($cipher);
@@ -33,7 +50,7 @@ class EncryptionService
         return base64_encode($iv.$ciphertext);
     }
 
-    public function decryptString(string $data, string $key, string $cipher = 'aes-256-cbc', bool $raw = true): string
+    public function decryptString(string $data, ?string $key = null, string $cipher = 'aes-256-cbc', bool $raw = true): string
     {
         if ('none' == $cipher) {
             if ($raw) {
@@ -49,6 +66,8 @@ class EncryptionService
             $bin = base64_decode($data);
         }
 
+        $key = $this->getKey($key);
+
         $iv_length = openssl_cipher_iv_length($cipher);
         $iv = substr($bin, 0, $iv_length);
         $encrypted = substr($bin, $iv_length);
@@ -60,13 +79,19 @@ class EncryptionService
      * @param resource $inputStream
      * @param resource $outputStream
      */
-    public function encryptStream(mixed $inputStream, mixed $outputStream, string $key, string $cipher = 'aes-256-ctr', int $chunkSize = 65536): void
+    public function encryptStream(mixed $inputStream, mixed $outputStream, ?string $key = null, string $cipher = 'aes-256-ctr', int $chunkSize = 65536): int
     {
         if ('none' == $cipher) {
-            stream_copy_to_stream($inputStream, $outputStream);
+            $bytesWritten = stream_copy_to_stream($inputStream, $outputStream);
 
-            return;
+            if (false === $bytesWritten) {
+                throw new \RuntimeException('Failed to write to stream');
+            }
+
+            return $bytesWritten;
         }
+
+        $key = $this->getKey($key);
 
         // generate random iv
         $ivlen = openssl_cipher_iv_length($cipher);
@@ -79,6 +104,7 @@ class EncryptionService
         }
 
         // Process input stream in chunks
+        $bytesWritten = 0;
         while (!feof($inputStream)) {
             $chunk = fread($inputStream, $chunkSize);
 
@@ -89,6 +115,7 @@ class EncryptionService
             if (0 === strlen($chunk)) {
                 break;
             }
+            $bytesWritten += strlen($chunk);
 
             // Encrypt chunk with current IV
             $encryptedChunk = openssl_encrypt(
@@ -111,14 +138,18 @@ class EncryptionService
             // Increment IV counter for next chunk
             $currentIv = $this->incrementIvCounter($currentIv, strlen($chunk));
         }
+
+        return $bytesWritten;
     }
 
     /**
      * @param resource $inputStream
      * @param resource $outputStream
      */
-    public function decryptStream(mixed $inputStream, mixed $outputStream, string $key, string $cipher = 'aes-256-ctr', int $chunkSize = 65536): void
+    public function decryptStream(mixed $inputStream, mixed $outputStream, ?string $key = null, string $cipher = 'aes-256-ctr', int $chunkSize = 65536): void
     {
+        $key = $this->getKey($key);
+
         $ivlen = openssl_cipher_iv_length($cipher);
         $iv = fread($inputStream, $ivlen);
         if (strlen($iv) !== $ivlen) {
