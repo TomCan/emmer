@@ -60,6 +60,11 @@ class File
     #[ORM\Column]
     private bool $deleteMarker = false;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $encryptionKey = null;
+    // no field definition for $decryptedKey, not stored in database
+    private ?string $decryptedKey = null;
+
     public function __construct(Bucket $bucket, string $name, ?string $version = null, string $contentType = '', int $size = 0, ?\DateTime $ctime = new \DateTime(), string $etag = '')
     {
         $this->fileparts = new ArrayCollection();
@@ -255,5 +260,25 @@ class File
         $this->deleteMarker = $deleteMarker;
 
         return $this;
+    }
+
+    public function getEncryptionKey(): ?string
+    {
+        return $this->encryptionKey;
+    }
+
+    public function setEncryptionKey(?string $encryptionKey): void
+    {
+        $this->encryptionKey = $encryptionKey;
+    }
+
+    public function getDecryptedKey(): ?string
+    {
+        return $this->decryptedKey;
+    }
+
+    public function setDecryptedKey(?string $decryptedKey): void
+    {
+        $this->decryptedKey = $decryptedKey;
     }
 }
