@@ -3,9 +3,9 @@
 namespace App\Tests\Service\EncryptionService;
 
 use App\Service\EncryptionService;
-use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-class EncryptionServiceStreamTest extends TestCase
+class EncryptionServiceStreamTest extends KernelTestCase
 {
     private EncryptionService $encryptionService;
     private string $inputFile;
@@ -19,7 +19,11 @@ class EncryptionServiceStreamTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->encryptionService = new EncryptionService();
+        // Boot the Symfony kernel and get the container
+        self::bootKernel();
+        $container = static::getContainer();
+        // Get services
+        $this->encryptionService = $container->get(EncryptionService::class);
 
         // generate 10MB random file
         $this->inputFile = tempnam(sys_get_temp_dir(), 'encrypt');

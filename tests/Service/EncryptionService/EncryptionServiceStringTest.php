@@ -3,15 +3,18 @@
 namespace App\Tests\Service\EncryptionService;
 
 use App\Service\EncryptionService;
-use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-class EncryptionServiceStringTest extends TestCase
+class EncryptionServiceStringTest extends KernelTestCase
 {
     private EncryptionService $encryptionService;
 
     protected function setUp(): void
     {
-        $this->encryptionService = new EncryptionService();
+        self::bootKernel();
+        $container = static::getContainer();
+        // Get services
+        $this->encryptionService = $container->get(EncryptionService::class);
     }
 
     // String Encryption Tests
